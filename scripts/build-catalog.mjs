@@ -45,6 +45,7 @@ const CATEGORIES = [
     { id: "tech", name: "Tehnologija i znanost", icon: "🔬", tags: ["technology", "science", "digital", "engineering", "indie-dev", "design"] },
     { id: "zdravlje", name: "Zdravlje i osobni razvoj", icon: "🌱", tags: ["health", "fitness", "personal-development", "communication", "masculinity", "ethics"] },
     { id: "obitelj", name: "Obitelj i lifestyle", icon: "🏡", tags: ["parenting", "women", "lifestyle", "travel", "tourism", "youth"] },
+    { id: "logopedija", name: "Logopedija", icon: "🗣", tags: ["speech-therapy"] },
     { id: "obrazovanje", name: "Obrazovanje", icon: "🎓", tags: ["education", "language"] },
     { id: "kultura", name: "Kultura i umjetnost", icon: "🎭", tags: ["culture", "film", "music", "philosophy", "fantasy"] },
     { id: "zabava", name: "Razgovori i zabava", icon: "🎙", tags: ["talk-show", "interview", "comedy", "pop-culture", "gaming", "qa", "behind-the-scenes"] },
