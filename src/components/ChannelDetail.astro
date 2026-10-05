@@ -1,0 +1,76 @@
+---
+// Detalj kanala. Renderira se na trajnoj stranici /p/<slug>/, a dijalog na početnoj
+// dohvaća tu istu stranicu i izvadi #detail-root — jedna implementacija, dva mjesta.
+import Avatar from "./Avatar.astro";
+import { categoryById, episodeUrl, thumbUrl, shortDate, compactNumber, ACTIVITY_LABEL } from "../lib/catalog.js";
+import catalog from "../lib/catalog.js";
+
+const { p } = Astro.props;
+const cat = categoryById[p.category];
+const tagLabel = t => catalog.tagLabels[t] || t;
+
+const facts = [
+    p.last && ["Zadnja epizoda", shortDate(p.last)],
+    p.originals90d != null && ["Epizoda u 90 dana", p.originals90d],
+    p.avgMin && ["Prosječno trajanje", `${p.avgMin} min`],
+    p.followers && ["Pratitelja", compactNumber(p.followers)],
+    p.onDomovina && p.episodeCount && ["Na domovina.ai", `${p.episodeCount} epizoda`],
+].filter(Boolean);
+---
+<article class="detail" id="detail-root" data-slug={p.slug}>
+    <header class="detail-head">
+        <Avatar p={p} size={72} eager />
+        <div>
+            <p class="detail-cat"><span aria-hidden="true">{cat.icon}</span> {cat.name}</p>
+            <h1>{p.name}</h1>
+            <p class="detail-sub">
+                <span class={`pill act-${p.activity}`}>{ACTIVITY_LABEL[p.activity]}</span>
+                {p.hosts.length > 0 && <span>{p.hosts.join(", ")}</span>}
+                {p.audioOnly && <span class="muted">samo audio</span>}
+            </p>
+        </div>
+    </header>
+
+    {p.description && <p class="detail-desc">{p.description}</p>}
+
+    {facts.length > 0 && (
+        <dl class="facts">
+            {facts.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+    )}
+
+    <div class="actions">
+        {p.domovinaUrl && <a class="btn btn-primary" href={p.domovinaUrl} target="_blank" rel="noopener">Otvori na domovina.ai</a>}
+        {p.youtube && <a class={`btn ${p.domovinaUrl ? "" : "btn-primary"}`} href={p.youtube} target="_blank" rel="noopener">YouTube kanal</a>}
+        <a class="btn btn-ghost" href={`/p/${p.slug}/`} data-permalink>Trajna poveznica</a>
+    </div>
+
+    {p.episodes.length > 0 && (
+        <section class="detail-eps">
+            <h2>Najnovije epizode</h2>
+            <ul>
+                {p.episodes.map(e => (
+                    <li>
+                        <a href={episodeUrl(e, p.onDomovina)} target="_blank" rel="noopener" class="dep">
+                            <span class="ep-thumb">
+                                <img src={thumbUrl(e.id)} alt="" width="160" height="90" loading="lazy" decoding="async" />
+                                {e.min && <span class="ep-dur">{e.min} min</span>}
+                            </span>
+                            <span class="dep-body">
+                                <span class="dep-title">{e.title}</span>
+                                <span class="muted"><time datetime={e.date} data-rel>{shortDate(e.date)}</time></span>
+                                {e.abstract && <span class="dep-abs">{e.abstract}</span>}
+                            </span>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    )}
+
+    {p.tags.length > 0 && (
+        <ul class="tags" aria-label="Teme">
+            {p.tags.map(t => <li>{tagLabel(t)}</li>)}
+        </ul>
+    )}
+</article>

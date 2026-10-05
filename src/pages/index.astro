@@ -1,0 +1,143 @@
+---
+import Base from "../layouts/Base.astro";
+import Row from "../components/Row.astro";
+import FeedItem from "../components/FeedItem.astro";
+import catalog, { BUILD_DATE, byFreshness, shortDate } from "../lib/catalog.js";
+
+const { totals, categories, podcasts, feed } = catalog;
+
+// Uspavani kanali su u katalogu, ali sklopljeni: na velikom ekranu bi inače 200+
+// redova koji ništa ne objavljuju gurali aktivne ispod pregiba.
+const panels = categories.map(c => {
+    const all = podcasts.filter(p => p.category === c.id).sort(byFreshness);
+    return {
+        ...c,
+        live: all.filter(p => p.activity !== "dormant"),
+        dormant: all.filter(p => p.activity === "dormant"),
+        active: all.filter(p => p.activity === "active").length,
+    };
+});
+
+// Feed po danima — „danas/jučer" dopisuje app.js prema satu posjetitelja.
+const days = [];
+for (const e of feed) {
+    if (days.at(-1)?.date !== e.date) days.push({ date: e.date, items: [] });
+    days.at(-1).items.push(e);
+}
+
+const title = "Hrvatski podcasti — svi na jednom mjestu";
+const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorijama, s novim epizodama čim izađu. ${totals.active} aktivnih, ${totals.newThisWeek} novih epizoda u zadnjih 7 dana.`;
+---
+<Base title={title} description={description}>
+    <header class="top">
+        <a href="/" class="brand" aria-label="Hrvatski podcasti — početna">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><rect x="12" y="6" width="8" height="13" rx="4" fill="#fff"/><path d="M9 15a7 7 0 0 0 14 0M16 22v4" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+            <span class="brand-text">
+                <span class="brand-title">Hrvatski podcasti</span>
+                <span class="brand-sub">katalog · <span class="nowrap">domovina.ai</span></span>
+            </span>
+        </a>
+
+        <dl class="stats">
+            <div><dt>podcasta</dt><dd>{totals.podcasts}</dd></div>
+            <div><dt>aktivnih</dt><dd>{totals.active}</dd></div>
+            <div><dt>novih epizoda u 7 dana</dt><dd>{totals.newThisWeek}</dd></div>
+            <div class="stat-dom"><dt>na domovina.ai</dt><dd>{totals.onDomovina}</dd></div>
+        </dl>
+
+        <div class="controls">
+            <label class="search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input id="q" type="search" placeholder="Traži podcast, voditelja, temu…" autocomplete="off" aria-label="Traži podcast" />
+                <kbd>/</kbd>
+            </label>
+            <div class="seg" role="radiogroup" aria-label="Prikaz">
+                <button type="button" data-filter="all" aria-pressed="true">Svi</button>
+                <button type="button" data-filter="active" aria-pressed="false">Aktivni</button>
+                <button type="button" data-filter="domovina" aria-pressed="false" title="Kanali obrađeni na domovina.ai — članci, poglavlja, pretraga">Na domovina.ai</button>
+            </div>
+            <select id="sort" aria-label="Poredak">
+                <option value="fresh">Najsvježiji</option>
+                <option value="name">A – Ž</option>
+                <option value="followers">Najpraćeniji</option>
+            </select>
+            <button type="button" id="theme" class="icon-btn" aria-label="Promijeni temu" title="Svijetla / tamna tema">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <nav class="cats" aria-label="Kategorije">
+        <button type="button" class="cat" data-cat="" aria-pressed="true">Sve <span>{totals.podcasts}</span></button>
+        {panels.map(c => (
+            <button type="button" class="cat" data-cat={c.id} aria-pressed="false">
+                <span class="cat-ico" aria-hidden="true">{c.icon}</span>{c.name} <span>{c.count}</span>
+            </button>
+        ))}
+    </nav>
+
+    <div class="mtabs" role="tablist">
+        <button type="button" role="tab" data-view="catalog" aria-selected="true">Katalog</button>
+        <button type="button" role="tab" data-view="feed" aria-selected="false">Upravo stiglo <span class="badge">{totals.newThisWeek}</span></button>
+    </div>
+
+    <div class="layout">
+        <aside class="feed" aria-labelledby="feed-h">
+            <div class="feed-head">
+                <h2 id="feed-h">Upravo stiglo</h2>
+                <span class="muted">nove epizode, svaku noć</span>
+            </div>
+            <div class="feed-scroll">
+                {days.map(d => (
+                    <section class="day" data-date={d.date}>
+                        <h3><time datetime={d.date} data-day>{shortDate(d.date)}</time></h3>
+                        <ul>{d.items.map(e => <FeedItem e={e} />)}</ul>
+                    </section>
+                ))}
+                <p class="feed-empty" hidden>Nema novih epizoda za ovaj odabir.</p>
+            </div>
+        </aside>
+
+        <main class="catalog" id="catalog">
+            <div class="panels">
+                {panels.map(c => (
+                    <section class="panel" data-cat={c.id} id={`k-${c.id}`}>
+                        <header class="panel-head">
+                            <h2><span class="cat-ico" aria-hidden="true">{c.icon}</span>{c.name}</h2>
+                            <span class="panel-count" title={`${c.active} aktivnih od ${c.count}`}><b>{c.active}</b>/{c.count}</span>
+                        </header>
+                        <ul class="rows">{c.live.map(p => <Row p={p} />)}</ul>
+                        {c.dormant.length > 0 && (
+                            <details class="dormant">
+                                <summary>+ {c.dormant.length} {c.dormant.length === 1 ? "uspavan" : "uspavanih"} <span class="muted">(bez epizode 4+ mj.)</span></summary>
+                                <ul class="rows">{c.dormant.map(p => <Row p={p} />)}</ul>
+                            </details>
+                        )}
+                    </section>
+                ))}
+            </div>
+            <p class="empty" hidden>Ništa ne odgovara pretrazi. <button type="button" id="reset" class="link">Očisti filtre</button></p>
+
+            <footer class="foot">
+                <p>
+                    Katalog hrvatskih podcasta s YouTubea i audio platformi, osvježava se svaku noć.
+                    Kanali označeni <span class="dom-dot">D</span> obrađeni su na
+                    <a href="https://www.domovina.ai">domovina.ai</a> — članci, poglavlja i pretraga po izgovorenom.
+                </p>
+                <p class="muted">
+                    Ažurirano {shortDate(BUILD_DATE)} · Fali podcast?
+                    <a href="https://github.com/domovinatv/fetch.domovina.tv/issues/new?template=add-podcast.yml" rel="noopener">Predloži ga</a>
+                </p>
+            </footer>
+        </main>
+    </div>
+
+    <dialog id="detail" aria-label="Detalji podcasta">
+        <button type="button" class="dlg-close icon-btn" aria-label="Zatvori" data-close>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <div class="dlg-body"></div>
+    </dialog>
+
+    <script src="../scripts/app.js"></script>
+</Base>

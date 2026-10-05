@@ -1,0 +1,20 @@
+---
+import { episodeUrl, thumbUrl } from "../lib/catalog.js";
+
+const { e } = Astro.props;
+---
+<li class="ep" data-cat={e.category} data-dom={e.onDomovina ? "1" : undefined} data-slug={e.slug}>
+    <a href={episodeUrl(e, e.onDomovina)} target="_blank" rel="noopener" class="ep-link">
+        <span class="ep-thumb">
+            <img src={thumbUrl(e.id)} alt="" width="120" height="68" loading="lazy" decoding="async" />
+            {e.min && <span class="ep-dur">{e.min} min</span>}
+        </span>
+        <span class="ep-body">
+            <span class="ep-ch">
+                {e.name}
+                {e.onDomovina && <span class="dom-dot" title="Otvara se na domovina.ai">D</span>}
+            </span>
+            <span class="ep-title">{e.title}</span>
+        </span>
+    </a>
+</li>

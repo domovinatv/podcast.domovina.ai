@@ -1,0 +1,22 @@
+---
+// Monogram je uvijek ispod; slika ga prekrije kad se učita, a ako je nema (404),
+// sama se ukloni i ostaje monogram u stabilnoj boji kanala.
+import { initials, hue } from "../lib/catalog.js";
+
+const { p, size = 30, eager = false } = Astro.props;
+---
+<span class="av" style={`--h:${hue(p.slug)};--s:${size}px`} aria-hidden="true">
+    <span class="av-mono">{initials(p.name)}</span>
+    {p.avatar && (
+        <img
+            src={p.avatar}
+            alt=""
+            width={size}
+            height={size}
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            referrerpolicy="no-referrer"
+            onerror="this.remove()"
+        />
+    )}
+</span>

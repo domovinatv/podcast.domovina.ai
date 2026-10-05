@@ -1,0 +1,37 @@
+---
+import Base from "../../layouts/Base.astro";
+import ChannelDetail from "../../components/ChannelDetail.astro";
+import Row from "../../components/Row.astro";
+import catalog, { categoryById, byFreshness } from "../../lib/catalog.js";
+
+export function getStaticPaths() {
+    return catalog.podcasts.map(p => ({ params: { slug: p.slug }, props: { p } }));
+}
+
+const { p } = Astro.props;
+const cat = categoryById[p.category];
+const related = catalog.podcasts
+    .filter(x => x.category === p.category && x.slug !== p.slug && x.activity !== "dormant")
+    .sort(byFreshness)
+    .slice(0, 24);
+
+const description = p.description
+    || `${p.name} — hrvatski podcast (${cat.name.toLowerCase()})${p.hosts.length ? `, voditelji: ${p.hosts.join(", ")}` : ""}. Najnovije epizode i poveznice.`;
+---
+<Base title={`${p.name} · Hrvatski podcasti`} description={description} image={p.avatar}>
+    <div class="page">
+        <nav class="crumbs">
+            <a href="/">← Svi hrvatski podcasti</a>
+            <span class="muted">/</span>
+            <a href={`/?k=${cat.id}`}>{cat.name}</a>
+        </nav>
+        <ChannelDetail p={p} />
+        {related.length > 0 && (
+            <section class="related">
+                <h2>Još iz kategorije {cat.name}</h2>
+                <ul class="rows rows-grid">{related.map(x => <Row p={x} />)}</ul>
+            </section>
+        )}
+    </div>
+    <script src="../../scripts/rel-time.js"></script>
+</Base>
