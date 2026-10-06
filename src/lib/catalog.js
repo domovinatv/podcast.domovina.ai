@@ -13,6 +13,10 @@ export function episodeUrl(ep, onDomovina) {
     return onDomovina ? `https://domovina.ai/v/${ep.id}` : `https://www.youtube.com/watch?v=${ep.id}`;
 }
 
+// Isti YouTube video kroz domovina.ai player (/yt/<id>) — za kanale koji tamo nisu
+// obrađeni. Eksperiment uz embed na ovoj stranici, ne zamjena.
+export const domovinaPlayerUrl = id => `https://domovina.ai/yt/${id}`;
+
 export const thumbUrl = id => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
 
 export function initials(name) {

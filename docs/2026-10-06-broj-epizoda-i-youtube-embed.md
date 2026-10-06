@@ -48,6 +48,28 @@ izravno u click handleru prije `close()`, a `cancel`/`close` su samo dodatna mre
 **Neprovjereno:** zatvaranje playera tipkom Esc — sintetički Escape iz ekstenzije nije zatvorio
 dijalog; na pravoj tipkovnici nije testirano. Mobilni prikaz (`#player` 100vw) nije gledan na uređaju.
 
+## Eksperiment: isti video kroz domovina.ai player (`/yt/<id>`)
+
+domovina.ai od v2.0.169 ima rutu `/yt/<videoId>` koja pušta bilo koji YouTube video kroz
+službeni embed, uz gumb na obrađenu epizodu ako za taj video postoji `summary.json`
+(opis u `../domovina.ai/CLAUDE.md` i `docs/plans/2026-10-06-youtube-bez-reklama-plan-b.md`
+tog repoa). Ovdje je to **dodatak** uz postojeći embed, ne zamjena, da se dva puta mogu
+usporediti:
+
+- Detalj kanala: poveznica `.dep-dom` „Gledaj na domovina.ai ↗" je sestra `.dep` kartice
+  (ne smije biti unutar nje, ugniježđeni `<a>` nije valjan) i vidi se samo dok kartica svira
+  (`.dep.playing + .dep-dom`).
+- Feed dijalog `#player`: druga poveznica uz „Otvori na YouTubeu".
+- Klik na bilo koju od njih gasi lokalni embed (dva playera ne smiju svirati odjednom).
+- URL se slaže na dva mjesta: `domovinaPlayerUrl` u `lib/catalog.js` i kopija u
+  `scripts/player.js` (klijentski skript ne smije uvesti `catalog.js`, jer bi povukao
+  cijeli `catalog.json` u bundle).
+
+Provjereno u Braveu na `/p/game-changers-podcast/` (lokalno) i u produkciji (HTML sadrži
+`domovina.ai/yt/<id>`). **Nije gledan** dijalog na početnoj u pregledniku. Otvoreno: odluka
+ostaje li ovo, postaje li primarni klik, ili se miče. `/yt/` na domovina.ai nema `noindex`
+ni OG inject, a native WebView varijanta nije isprobana na uređaju.
+
 ## Vezani dokumenti
 
 - [Kategorije i logopedija](2026-10-05-kategorije-i-logopedija.md)

@@ -2,7 +2,7 @@
 // Detalj kanala. Renderira se na trajnoj stranici /p/<slug>/, a dijalog na početnoj
 // dohvaća tu istu stranicu i izvadi #detail-root — jedna implementacija, dva mjesta.
 import Avatar from "./Avatar.astro";
-import { categoryById, episodeUrl, thumbUrl, shortDate, compactNumber, episodeCountLabel, ACTIVITY_LABEL } from "../lib/catalog.js";
+import { categoryById, episodeUrl, domovinaPlayerUrl, thumbUrl, shortDate, compactNumber, episodeCountLabel, ACTIVITY_LABEL } from "../lib/catalog.js";
 import catalog from "../lib/catalog.js";
 
 const { p } = Astro.props;
@@ -62,6 +62,7 @@ const facts = [
                                 {e.abstract && <span class="dep-abs">{e.abstract}</span>}
                             </span>
                         </a>
+                        {!p.onDomovina && <a class="dep-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener">Gledaj na domovina.ai ↗</a>}
                     </li>
                 ))}
             </ul>

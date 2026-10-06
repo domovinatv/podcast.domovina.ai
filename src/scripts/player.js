@@ -4,6 +4,7 @@
 //   .dep[data-yt]     — epizoda u detalju kanala: svira na mjestu, kartica se raširi
 //   .ep-link[data-yt] — epizoda u feedu: sličica je premala, svira u dijalogu #player
 
+const domovinaPlayerUrl = id => `https://domovina.ai/yt/${id}`; // isto kao u lib/catalog.js
 const embedSrc = id => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
 
 function iframe(id, title) {
@@ -47,12 +48,13 @@ function playerDialog() {
         </button>
         <p class="player-title"></p>
         <span class="ep-thumb"></span>
-        <p class="player-out"><a target="_blank" rel="noopener">Otvori na YouTubeu</a></p>`;
+        <p class="player-out"><a target="_blank" rel="noopener" data-out-yt>Otvori na YouTubeu</a><a target="_blank" rel="noopener" data-out-dom>Gledaj na domovina.ai</a></p>`;
     // Zatvoren dijalog mora utihnuti — iframe ne smije svirati u skrivenom elementu.
     // Gasimo odmah na klik, a „close" pokriva Esc.
     const silence = () => dlg.querySelector(".ep-thumb").replaceChildren();
     dlg.addEventListener("click", e => {
-        if (e.target === dlg || e.target.closest("[data-close]")) { silence(); dlg.close(); }
+        // Odlazak na domovina.ai player gasi i ovaj, da ne sviraju dva.
+        if (e.target === dlg || e.target.closest("[data-close], [data-out-dom]")) { silence(); dlg.close(); }
     });
     dlg.addEventListener("cancel", silence);
     dlg.addEventListener("close", silence);
@@ -64,12 +66,14 @@ function playInDialog(a) {
     stopInline();
     const d = playerDialog();
     d.querySelector(".player-title").textContent = a.dataset.title || "";
-    d.querySelector(".player-out a").href = a.href;
+    d.querySelector("[data-out-yt]").href = a.href;
+    d.querySelector("[data-out-dom]").href = domovinaPlayerUrl(a.dataset.yt);
     d.querySelector(".ep-thumb").replaceChildren(iframe(a.dataset.yt, a.dataset.title));
     if (!d.open) d.showModal();
 }
 
 document.addEventListener("click", e => {
+    if (e.target.closest?.(".dep-dom")) return stopInline();
     const a = e.target.closest?.("a[data-yt]");
     if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
