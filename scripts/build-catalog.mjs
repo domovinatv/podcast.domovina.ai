@@ -26,6 +26,9 @@ const OUT = path.join(ROOT, "src", "data", "catalog.json");
 const EPISODES_PER_CHANNEL = 6;
 const FEED_SIZE = 120;
 const FEED_WINDOW_DAYS = 21;
+// watch_candidates.js prvi put povuče najviše toliko zadnjih videa kanala (--baseline-items).
+// Kanal koji je napunio baseline ima više epizoda nego što vidimo — broj je onda donja granica.
+const WATCH_BASELINE_ITEMS = 60;
 
 const readJson = (f, fallback) => {
     try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }
@@ -159,6 +162,7 @@ for (const p of registry.podcasts) {
     let avatar = null;
     let followers = p.metadata?.subscribers ?? null;
     let episodeCount = null;
+    let episodeCountMin = false;
     let description = "";
 
     if (onDomovina) {
@@ -187,6 +191,13 @@ for (const p of registry.podcasts) {
         }
     } else {
         const seen = watch[p.slug]?.seen || {};
+        const seenList = Object.values(seen);
+        const originals = seenList.filter(v => v.cls === "original").length;
+        const capped = seenList.filter(v => v.baseline).length >= WATCH_BASELINE_ITEMS;
+        // Procjena iz registryja zna biti stara, ali pokriva cijeli kanal; watch-state je svjež, ali odrezan.
+        const estimate = p.metadata?.episode_count ?? p.metadata?.episodes_estimate ?? null;
+        if (estimate && estimate >= originals) episodeCount = estimate;
+        else if (originals) { episodeCount = originals; episodeCountMin = capped; }
         episodes = Object.entries(seen)
             .filter(([, v]) => v.cls === "original")
             .map(([id, v]) => ({
@@ -232,6 +243,7 @@ for (const p of registry.podcasts) {
         originals90d: p.activity?.originals_90d ?? null,
         avgMin: p.metadata?.average_duration_minutes ?? null,
         episodeCount,
+        episodeCountMin,
         score: p.quality_score?.total ?? null,
         episodes: episodes.slice(0, EPISODES_PER_CHANNEL).map(({ isNew, ...e }) => e),
     };

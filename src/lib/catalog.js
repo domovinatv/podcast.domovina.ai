@@ -41,6 +41,11 @@ export function compactNumber(n) {
     return String(n);
 }
 
+// „57 ep." ili „60+ ep." kad znamo samo donju granicu (vidi episodeCountMin u build-catalog.mjs).
+export function episodeCountLabel(p, unit = "ep.") {
+    return p.episodeCount ? `${p.episodeCount}${p.episodeCountMin ? "+" : ""} ${unit}` : null;
+}
+
 export const ACTIVITY_LABEL = {
     active: "aktivan",
     slowing: "usporava",

@@ -4,7 +4,7 @@ import { episodeUrl, thumbUrl } from "../lib/catalog.js";
 const { e } = Astro.props;
 ---
 <li class="ep" data-cat={e.category} data-dom={e.onDomovina ? "1" : undefined} data-slug={e.slug}>
-    <a href={episodeUrl(e, e.onDomovina)} target="_blank" rel="noopener" class="ep-link">
+    <a href={episodeUrl(e, e.onDomovina)} target="_blank" rel="noopener" class="ep-link" data-yt={e.onDomovina ? undefined : e.id} data-title={e.onDomovina ? undefined : e.title}>
         <span class="ep-thumb">
             <img src={thumbUrl(e.id)} alt="" width="120" height="68" loading="lazy" decoding="async" />
             {e.min && <span class="ep-dur">{e.min} min</span>}

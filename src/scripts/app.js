@@ -2,6 +2,7 @@
 // samo skrivamo/otkrivamo i preslažemo — bez ikakvog dohvaćanja podataka, osim
 // detalja kanala koji se čita s njegove trajne stranice /p/<slug>/.
 import { applyRelative } from "./rel-time.js";
+import { stopInline } from "./player.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -72,6 +73,7 @@ function apply() {
 }
 
 function sortRows() {
+    panelsEl.dataset.sort = state.sort;
     const cmp = {
         fresh: (a, b) => (b.dataset.last || "").localeCompare(a.dataset.last || ""),
         name: (a, b) => a.querySelector(".row-name").textContent.localeCompare(b.querySelector(".row-name").textContent, "hr"),
@@ -181,8 +183,9 @@ document.addEventListener("pointerover", e => {
     if (a) load(a.getAttribute("href")).catch(() => {});
 });
 dlg.addEventListener("click", e => {
-    if (e.target === dlg || e.target.closest("[data-close]")) dlg.close();
+    if (e.target === dlg || e.target.closest("[data-close]")) { stopInline(dlg); dlg.close(); }
 });
+dlg.addEventListener("close", () => stopInline(dlg));
 
 // ─── Start ──────────────────────────────────────────────────────────────────
 if (state.sort !== "fresh") sortRows();

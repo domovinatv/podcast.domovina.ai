@@ -2,7 +2,7 @@
 // Detalj kanala. Renderira se na trajnoj stranici /p/<slug>/, a dijalog na početnoj
 // dohvaća tu istu stranicu i izvadi #detail-root — jedna implementacija, dva mjesta.
 import Avatar from "./Avatar.astro";
-import { categoryById, episodeUrl, thumbUrl, shortDate, compactNumber, ACTIVITY_LABEL } from "../lib/catalog.js";
+import { categoryById, episodeUrl, thumbUrl, shortDate, compactNumber, episodeCountLabel, ACTIVITY_LABEL } from "../lib/catalog.js";
 import catalog from "../lib/catalog.js";
 
 const { p } = Astro.props;
@@ -14,7 +14,7 @@ const facts = [
     p.originals90d != null && ["Epizoda u 90 dana", p.originals90d],
     p.avgMin && ["Prosječno trajanje", `${p.avgMin} min`],
     p.followers && ["Pratitelja", compactNumber(p.followers)],
-    p.onDomovina && p.episodeCount && ["Na domovina.ai", `${p.episodeCount} epizoda`],
+    p.episodeCount && (p.onDomovina ? ["Na domovina.ai", episodeCountLabel(p, "epizoda")] : ["Epizoda", episodeCountLabel(p, "").trim()]),
 ].filter(Boolean);
 ---
 <article class="detail" id="detail-root" data-slug={p.slug}>
@@ -51,7 +51,7 @@ const facts = [
             <ul>
                 {p.episodes.map(e => (
                     <li>
-                        <a href={episodeUrl(e, p.onDomovina)} target="_blank" rel="noopener" class="dep">
+                        <a href={episodeUrl(e, p.onDomovina)} target="_blank" rel="noopener" class="dep" data-yt={p.onDomovina ? undefined : e.id} data-title={p.onDomovina ? undefined : e.title}>
                             <span class="ep-thumb">
                                 <img src={thumbUrl(e.id)} alt="" width="160" height="90" loading="lazy" decoding="async" />
                                 {e.min && <span class="ep-dur">{e.min} min</span>}
