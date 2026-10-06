@@ -51,3 +51,7 @@ deterministička skripta; LLM treba tek za rubne slučajeve.
   + web research → `seed`), tag `speech-therapy` u `tag_legend`. Prompt:
   `~/.claude/handoffs/fetch.domovina.tv/2026-10-05-2052-logopedija-discovery.md`.
 - Nakon toga ovdje: kategorija „Logopedija" u `CATEGORIES` + `npm run build`.
+
+## Vezani dokumenti
+
+- [Broj epizoda, pratitelji i YouTube embed](2026-10-06-broj-epizoda-i-youtube-embed.md)
