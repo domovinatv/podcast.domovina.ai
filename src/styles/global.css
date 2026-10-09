@@ -372,7 +372,7 @@ dialog[open] { display: flex; flex-direction: column; }
 .days-bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
 .days-n, .days-h { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
 .days-group { margin-top: 22px; }
-.days-eps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 2px 12px; }
+.days-eps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 2px 12px; }
 .days-note { margin-top: 24px; font-size: 13px; max-width: 70ch; }
 .days-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px 10px; font-size: 12.5px; }
 .days-strip a { font-weight: 600; }
@@ -383,7 +383,7 @@ dialog[open] { display: flex; flex-direction: column; }
 }
 
 /* ─── Timeline dana (desno, najnoviji gore) ──────────────────────────────── */
-.page-days { max-width: 1240px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 32px; align-items: start; }
+.page-days { max-width: none; padding-left: clamp(16px, 2.5vw, 40px); padding-right: clamp(16px, 2.5vw, 40px); display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: clamp(24px, 3vw, 48px); align-items: start; }
 .days-side { position: sticky; top: 16px; padding-left: 6px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .tl { border-left: 1px solid var(--line); padding-left: 0; }
 .tl ol { list-style: none; margin: 0; padding: 0; }
@@ -482,3 +482,7 @@ dialog[open] { display: flex; flex-direction: column; }
 @media (max-width: 700px) { .yc-x .yc-minor { visibility: hidden; } }
 .days-bulk summary { cursor: pointer; font-size: 14px; }
 .days-bulk > p { font-size: 13px; margin: 6px 0 8px; }
+/* Kategorije dana teku u stupce (masonry), da kratke kategorije ne ostavljaju rupe. */
+.days-groups { columns: 360px auto; column-gap: clamp(16px, 2vw, 32px); margin-top: 6px; }
+.days-groups .days-group { break-inside: avoid; margin: 0 0 22px; padding-top: 2px; }
+.days-groups .days-eps { grid-template-columns: 1fr; }

@@ -44,12 +44,14 @@ const description = d.count
             </nav>
         </header>
 
+        <div class="days-groups">
         {groups.map(g => (
             <section class="days-group">
                 <h2><span class="cat-ico" aria-hidden="true">{g.icon}</span>{g.name} <span class="muted">{g.items.length}</span></h2>
                 <ul class="days-eps">{g.items.map(e => <FeedItem e={e} />)}</ul>
             </section>
         ))}
+        </div>
         {d.count === 0 && <p class="muted">Taj dan nije izašla nijedna nova epizoda.</p>}
         {d.bulk && (
             <details class="days-group days-bulk">
