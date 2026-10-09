@@ -1,6 +1,5 @@
 ---
-// Vertikalni timeline dana (najnoviji gore) za brzi skok na bilo koji dan.
-// Na mobitelu postaje vodoravna traka iznad sadržaja.
+// Vodoravna traka dana za mobitel (najnoviji lijevo); na desktopu je skrivena — tamo je DayPicker.
 import { archiveDays } from "../lib/catalog.js";
 
 const { current } = Astro.props;
@@ -8,8 +7,11 @@ const WD = ["ned", "pon", "uto", "sri", "čet", "pet", "sub"];
 const MONTHS = ["Siječanj", "Veljača", "Ožujak", "Travanj", "Svibanj", "Lipanj", "Srpanj", "Kolovoz", "Rujan", "Listopad", "Studeni", "Prosinac"];
 const max = Math.max(1, ...archiveDays.map(d => d.count));
 
+// Traka nosi ±45 dana oko odabranog (dalje se skače nativnim „Idi na datum" iz DayPicker),
+// inače bi svaka od stotina dnevnih stranica nosila cijelu arhivu.
+const ci = Math.max(0, archiveDays.findIndex(d => d.date === current));
 const items = [];
-for (const d of archiveDays) {
+for (const d of archiveDays.slice(Math.max(0, ci - 45), ci + 46)) {
     const [y, m, dd] = d.date.split("-").map(Number);
     const month = `${MONTHS[m - 1]} ${y}.`;
     if (items.at(-1)?.month !== month) items.push({ month, days: [] });

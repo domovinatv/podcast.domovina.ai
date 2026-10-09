@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import FeedItem from "../../components/FeedItem.astro";
 import DayTimeline from "../../components/DayTimeline.astro";
+import DayPicker from "../../components/DayPicker.astro";
 import catalog, { archiveDays, longDate, hoursLabel, plural, thumbUrl } from "../../lib/catalog.js";
 
 export function getStaticPaths() {
@@ -63,7 +64,7 @@ const description = d.count
             </details>
         )}
       </div>
-      <aside class="days-side"><DayTimeline current={d.date} /></aside>
+      <aside class="days-side"><DayPicker current={d.date} /><DayTimeline current={d.date} /></aside>
     </div>
     <script src="../../scripts/player.js"></script>
 </Base>

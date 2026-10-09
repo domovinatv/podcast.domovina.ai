@@ -1,0 +1,116 @@
+---
+// Birač dana za desktop: godina → mjesec → kalendar mjeseca (pon–ned). Ćelija dana je
+// obojena prema broju epizoda (relativno na najjači dan arhive), pa se ritam vidi i ovdje.
+// Sav sadržaj je u HTML-u; JS samo prebacuje koja je godina/mjesec vidljiv.
+// Na mobitelu ostaje samo „Idi na datum" (nativni birač) — traku dana daje DayTimeline.
+import { archiveDays } from "../lib/catalog.js";
+
+const { current } = Astro.props;
+const MON = ["siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj", "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"];
+const MON_S = ["sij", "velj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"];
+const byDate = new Map(archiveDays.map(d => [d.date, d]));
+const max = Math.max(1, ...archiveDays.map(d => d.count));
+const first = archiveDays.at(-1).date, last = archiveDays[0].date;
+const years = [...new Set(archiveDays.map(d => d.date.slice(0, 4)))].sort();
+const curYear = current.slice(0, 4), curMonth = current.slice(0, 7);
+
+// Mjeseci po godini, s brojem epizoda (prazni mjeseci izvan arhive su onemogućeni).
+const months = years.map(y => ({
+    y,
+    list: MON_S.map((label, i) => {
+        const key = `${y}-${String(i + 1).padStart(2, "0")}`;
+        const ds = archiveDays.filter(d => d.date.startsWith(key));
+        return { key, label, count: ds.reduce((s, d) => s + d.count, 0), on: ds.length > 0 };
+    }),
+}));
+
+// Kalendar svakog mjeseca: tjedni od ponedjeljka, prazne ćelije prije 1. i poslije zadnjeg.
+const cals = months.flatMap(m => m.list.filter(x => x.on)).map(({ key }) => {
+    const [y, mo] = key.split("-").map(Number);
+    const n = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    const lead = (new Date(Date.UTC(y, mo - 1, 1)).getUTCDay() + 6) % 7;
+    const cells = Array(lead).fill(null);
+    for (let d = 1; d <= n; d++) {
+        const date = `${key}-${String(d).padStart(2, "0")}`;
+        const day = byDate.get(date);
+        cells.push({ d, date, day, h: day ? day.count / max : 0 });
+    }
+    while (cells.length % 7) cells.push(null);
+    return { key, title: `${MON[mo - 1]} ${y}.`, cells, total: archiveDays.filter(d => d.date.startsWith(key)).reduce((s, d) => s + d.count, 0) };
+});
+---
+<nav class="dp" aria-label="Odaberi dan" data-cur-year={curYear} data-cur-month={curMonth}>
+    <div class="dp-head">
+        <a href="/dani/" class="dp-all">Svi dani</a>
+        <label class="dp-jump">
+            <span>Idi na datum</span>
+            <input type="date" min={first} max={last} value={current} />
+        </label>
+    </div>
+
+    <div class="dp-years" role="group" aria-label="Godina">
+        {years.map(y => <button type="button" data-year={y} aria-pressed={y === curYear ? "true" : "false"}>{y}</button>)}
+    </div>
+
+    {months.map(m => (
+        <div class="dp-months" data-year={m.y} hidden={m.y !== curYear}>
+            {m.list.map(x => x.on
+                ? <button type="button" data-month={x.key} aria-pressed={x.key === curMonth ? "true" : "false"}><span>{x.label}</span><small>{x.count}</small></button>
+                : <span class="dp-off">{x.label}</span>)}
+        </div>
+    ))}
+
+    {cals.map(c => (
+        <div class="dp-cal" data-month={c.key} hidden={c.key !== curMonth}>
+            <div class="dp-cal-head">
+                <button type="button" class="dp-step" data-step="-1" aria-label="Prethodni mjesec">‹</button>
+                <span><b>{c.title}</b> <small class="muted">{c.total} ep.</small></span>
+                <button type="button" class="dp-step" data-step="1" aria-label="Sljedeći mjesec">›</button>
+            </div>
+            <div class="dp-grid">
+                {["pon", "uto", "sri", "čet", "pet", "sub", "ned"].map(w => <span class="dp-wd">{w}</span>)}
+                {c.cells.map(x => !x ? <span></span>
+                    : x.day
+                        ? <a href={`/dani/${x.date}/`} class:list={["dp-day", { "dp-hot": x.h > 0.55, "dp-cur": x.date === current }]} style={`--h:${x.h.toFixed(2)}`} aria-current={x.date === current ? "page" : undefined} title={`${x.day.count} epizoda`}><b>{x.d}</b><small>{x.day.count}</small></a>
+                        : <span class="dp-day dp-none"><b>{x.d}</b></span>)}
+            </div>
+        </div>
+    ))}
+    <p class="dp-legend" aria-hidden="true"><span>manje</span><i style="--h:.1"></i><i style="--h:.35"></i><i style="--h:.6"></i><i style="--h:.9"></i><span>više epizoda</span></p>
+</nav>
+<script>
+    const dp = document.querySelector(".dp");
+    if (dp) {
+        const months = [...dp.querySelectorAll(".dp-cal")].map(c => c.dataset.month);
+        const show = (sel, attr, val) => dp.querySelectorAll(sel).forEach(el => (el.hidden = el.dataset[attr] !== val));
+        const press = (sel, attr, val) => dp.querySelectorAll(sel).forEach(el => el.setAttribute("aria-pressed", String(el.dataset[attr] === val)));
+        function openMonth(key) {
+            show(".dp-cal", "month", key);
+            const y = key.slice(0, 4);
+            show(".dp-months", "year", y);
+            press(".dp-years button", "year", y);
+            press(".dp-months button", "month", key);
+        }
+        dp.addEventListener("click", e => {
+            const yb = e.target.closest("[data-year]:is(button)");
+            if (yb) {
+                const y = yb.dataset.year;
+                // Godina trenutnog dana → njegov mjesec; druga godina → njen zadnji mjesec s epizodama.
+                const key = y === dp.dataset.curYear ? dp.dataset.curMonth : months.filter(m => m.startsWith(y)).at(-1);
+                if (key) openMonth(key);
+                return;
+            }
+            const mb = e.target.closest("button[data-month]");
+            if (mb) return openMonth(mb.dataset.month);
+            const st = e.target.closest(".dp-step");
+            if (st) {
+                const cur = dp.querySelector(".dp-cal:not([hidden])").dataset.month;
+                const next = months[months.indexOf(cur) + Number(st.dataset.step)];
+                if (next) openMonth(next);
+            }
+        });
+        dp.querySelector(".dp-jump input").addEventListener("change", e => {
+            if (e.target.value) location.href = `/dani/${e.target.value}/`;
+        });
+    }
+</script>
