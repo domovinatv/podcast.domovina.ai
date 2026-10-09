@@ -478,3 +478,7 @@ dialog[open] { display: flex; flex-direction: column; }
     .bars-wd { gap: 4px; }
     .bar-val { font-size: 11px; }
 }
+.yc-x .yc-year { color: var(--ink); font-weight: 600; }
+@media (max-width: 700px) { .yc-x .yc-minor { visibility: hidden; } }
+.days-bulk summary { cursor: pointer; font-size: 14px; }
+.days-bulk > p { font-size: 13px; margin: 6px 0 8px; }

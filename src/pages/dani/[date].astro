@@ -13,6 +13,7 @@ export function getStaticPaths() {
 }
 
 const { d, newer, older } = Astro.props;
+const BULK = 5;
 const groups = catalog.categories
     .map(c => ({ ...c, items: d.items.filter(e => e.category === c.id) }))
     .filter(g => g.items.length);
@@ -50,6 +51,15 @@ const description = d.count
             </section>
         ))}
         {d.count === 0 && <p class="muted">Taj dan nije izašla nijedna nova epizoda.</p>}
+        {d.bulk && (
+            <details class="days-group days-bulk">
+                <summary>
+                    <b>Objava arhive</b> <span class="muted">· {[...new Set(d.bulk.map(e => e.name))].map(n => `${n} (${d.bulk.filter(e => e.name === n).length})`).join(", ")}</span>
+                </summary>
+                <p class="muted">Kanal je taj dan objavio {BULK}+ epizoda odjednom, uglavnom stariji sadržaj. Ne broje se u nove epizode dana.</p>
+                <ul class="days-eps">{d.bulk.map(e => <FeedItem e={e} />)}</ul>
+            </details>
+        )}
       </div>
       <aside class="days-side"><DayTimeline current={d.date} /></aside>
     </div>

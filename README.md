@@ -55,7 +55,7 @@ a `/dani/YYYY-MM-DD/` su sve epizode tog dana, grupirane po kategoriji, s ←/�
 navigacijom. Na početnoj je traka „Jučer: N epizoda · Svi dani →".
 
 - Podaci su `src/data/days.json`, koji slaže isti `build-catalog.mjs`: sve epizode od
-  `ARCHIVE_START` (01.01.2026.) **do jučer**, bez reza na `FEED_SIZE`. Današnji dan se
+  `ARCHIVE_START` (= `since` iz `backfill.json`, trenutno 01.01.2025.) **do jučer**, bez reza na `FEED_SIZE`. Današnji dan se
   izostavlja jer još nije gotov.
 - Dan = **točan datum objave** po hrvatskom vremenu iz
   `fetch.domovina.tv/automatic/watchlist/backfill.json` (YouTube Data API,
@@ -63,5 +63,9 @@ navigacijom. Na početnoj je traka „Jučer: N epizoda · Svi dani →".
   vjeruje se samo toj datoteci; watch-state datumi iz flat liste su točni tek ~12 dana
   unatrag („prije 2 mjeseca" → 61 dan), pa se koriste samo za ono što backfill još nije pokrio.
 - Prošlost pokazuje ono što je danas javno: obrisani videi i ugašeni kanali ne vide se.
+- Kanal s 5+ originala u jednom danu objavljuje arhivu (Andromeda 01.12.2025.: 64): na
+  stranici dana je sklopljen pod „Objava arhive" i ne ulazi u broj dana ni u grafove.
+- `/dani/` ima graf po danu (+ 7-dnevni prosjek) i odjeljak Ritam (dan u tjednu, sat objave
+  iz `hours[]` u `days.json`).
 - Praćeni kanali ulaze tek kad su objavljeni na domovina.ai (bundle), pa se epizoda koja
   se obrađuje danima naknadno pojavi na svom danu — stranice se ionako grade svaku noć.

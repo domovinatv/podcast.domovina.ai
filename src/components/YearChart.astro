@@ -17,13 +17,13 @@ const line = avg.map((v, i) => v == null ? null : `${(i + 0.5) * step},${y(v).to
 
 const MON = ["sij", "velj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"];
 const months = days.map((d, i) => ({ d, i })).filter(({ d }) => d.date.endsWith("-01"))
-    .map(({ d, i }) => ({ left: (i / n) * 100, label: MON[+d.date.slice(5, 7) - 1] }));
+    .map(({ d, i }) => ({ left: (i / n) * 100, label: d.date.slice(5, 7) === "01" ? d.date.slice(0, 4) : MON[+d.date.slice(5, 7) - 1], year: d.date.slice(5, 7) === "01", minor: !["01", "04", "07", "10"].includes(d.date.slice(5, 7)) }));
 const grid = Array.from({ length: yMax / 10 + 1 }, (_, k) => k * 10);
 const fmt = v => v.toFixed(1).replace(".", ",");
 ---
 <figure class="yc" aria-labelledby="yc-cap">
     <figcaption id="yc-cap" class="chart-head">
-        <h2>Epizode po danu kroz godinu</h2>
+        <h2>Epizode po danu</h2>
         <span class="legend">
             <span class="lg"><i class="lg-bar"></i>dan</span>
             <span class="lg"><i class="lg-line"></i>prosjek 7 dana</span>
@@ -46,6 +46,6 @@ const fmt = v => v.toFixed(1).replace(".", ",");
         </div>
     </div>
     <div class="yc-x" aria-hidden="true">
-        {months.map(m => <span style={`left:${m.left}%`}>{m.label}</span>)}
+        {months.map(m => <span class:list={{ "yc-year": m.year, "yc-minor": m.minor }} style={`left:${m.left}%`}>{m.label}</span>)}
     </div>
 </figure>

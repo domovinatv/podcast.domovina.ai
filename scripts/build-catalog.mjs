@@ -31,13 +31,13 @@ const FEED_WINDOW_DAYS = 21;
 // Kanal koji je napunio baseline ima više epizoda nego što vidimo — broj je onda donja granica.
 const WATCH_BASELINE_ITEMS = 60;
 // Arhiva po danima (/dani/). Točne datume objave daje automatic/watchlist/backfill.json
-// (YouTube Data API, automatic/backfill_days.js) od 01.01.2026. Bez njega su datumi
+// (YouTube Data API, automatic/backfill_days.js) od svoje granice `since`. Bez njega su datumi
 // iz watch-statea točni samo ~12 dana unatrag (flat lista: „prije 2 mjeseca").
-const ARCHIVE_START = "2026-01-01";
+const ARCHIVE_START = readJson(path.join(FETCH, "automatic", "watchlist", "backfill.json"), {}).since || "2026-01-01";
 
-const readJson = (f, fallback) => {
+function readJson(f, fallback) {
     try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }
-};
+}
 
 // ─── Kategorije ──────────────────────────────────────────────────────────────
 // Kurator u registryju piše tagove od najvažnijeg, pa PRVI tag odlučuje. Iznimka su
@@ -330,15 +330,24 @@ for (const e of archive.sort((a, b) => (catOrder[a.category] - catOrder[b.catego
     if (!byDay.has(e.date)) byDay.set(e.date, []);
     byDay.get(e.date).push(e);
 }
+// Kanal koji u jednom danu objavi BULK_PER_DAY+ originala ne izbacuje nove epizode nego
+// arhivu (Andromeda 01.12.2025.: 64 odjednom). Takvi su na stranici dana zasebno i ne
+// ulaze u broj dana ni u grafove — jedan takav dan inače razvuče cijelu skalu.
+const BULK_PER_DAY = 5;
 const days = [];
 for (let d = ARCHIVE_START; d < today; d = new Date(Date.parse(d) + 86400000).toISOString().slice(0, 10)) {
-    const items = byDay.get(d) || [];
+    const all = byDay.get(d) || [];
+    const perCh = {};
+    for (const e of all) perCh[e.slug] = (perCh[e.slug] || 0) + 1;
+    const items = all.filter(e => perCh[e.slug] < BULK_PER_DAY);
+    const bulkItems = all.filter(e => perCh[e.slug] >= BULK_PER_DAY);
     days.push({
         date: d,
         count: items.length,
         channels: new Set(items.map(e => e.slug)).size,
         minutes: items.reduce((s, e) => s + (e.min || 0), 0),
         items,
+        ...(bulkItems.length ? { bulk: bulkItems } : {}),
     });
 }
 days.reverse();                                              // najnoviji prvi
