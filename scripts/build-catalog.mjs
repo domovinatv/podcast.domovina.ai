@@ -30,10 +30,10 @@ const FEED_WINDOW_DAYS = 21;
 // watch_candidates.js prvi put povuče najviše toliko zadnjih videa kanala (--baseline-items).
 // Kanal koji je napunio baseline ima više epizoda nego što vidimo — broj je onda donja granica.
 const WATCH_BASELINE_ITEMS = 60;
-// Arhiva po danima (/dani/) počinje prvom noći kad je watch pratio sve kandidate
-// (automatic/watchlist/events.jsonl). Raniji dani postoje samo iz baselinea
-// (zadnjih 60 videa kanala) i kod plodnih kanala bi bili krnji.
-const ARCHIVE_START = "2026-09-25";
+// Arhiva po danima (/dani/). Točne datume objave daje automatic/watchlist/backfill.json
+// (YouTube Data API, automatic/backfill_days.js) od 01.01.2026. Bez njega su datumi
+// iz watch-statea točni samo ~12 dana unatrag (flat lista: „prije 2 mjeseca").
+const ARCHIVE_START = "2026-01-01";
 
 const readJson = (f, fallback) => {
     try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }
@@ -146,6 +146,33 @@ if (!registry) {
 }
 const bundle = await loadBundle();
 const watch = readJson(path.join(FETCH, "automatic", "watchlist", "watch-state.json"), { channels: {} }).channels || {};
+const backfill = readJson(path.join(FETCH, "automatic", "watchlist", "backfill.json"), { channels: {} }).channels || {};
+const ZAGREB_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zagreb", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/**
+ * Epizode kanala za arhivu po danima. backfill.json je izvor istine za sve do
+ * `covered_until` kanala (točan dan objave, isto pravilo original/derivat kao nightly);
+ * novije epizode dolaze iz bundlea/watch-statea dok ih idući backfill ne pokrije.
+ * Epizode s domovina.ai (bundle) ostaju i kad ih backfill drži isječkom — obrađene su.
+ */
+function archiveEpisodes(slug, episodes, onDomovina) {
+    const bf = backfill[slug];
+    if (!bf?.originals || !bf.covered_until) return episodes;
+    const coveredDay = ZAGREB_DAY.format(new Date(bf.covered_until));
+    const byId = new Map(episodes.map(e => [e.id, e]));
+    const out = Object.entries(bf.originals).map(([id, o]) => ({
+        ...(byId.get(id) || {}),
+        id,
+        date: o.date,
+        title: byId.get(id)?.title || o.title,
+        min: o.duration ? Math.round(o.duration / 60) : byId.get(id)?.min ?? null,
+    }));
+    for (const e of episodes) {
+        if (bf.originals[e.id]) continue;
+        if (e.date >= coveredDay || onDomovina) out.push(e);
+    }
+    return out.sort((a, b) => b.date.localeCompare(a.date));
+}
 
 // Avatari s CDN-a postoje za kandidate glasanja (sync_voting_candidates.mjs) — to su
 // nepraćeni kanali s YouTube URL-om. Praćenima avatar čitamo iz channel.json.
@@ -255,7 +282,7 @@ for (const p of registry.podcasts) {
     };
     podcasts.push(entry);
 
-    for (const e of episodes) {
+    for (const e of archiveEpisodes(p.slug, episodes, onDomovina)) {
         if (e.date < ARCHIVE_START) break;
         if (e.date >= today) continue;                       // današnji dan još nije gotov
         const { abstract, isNew, ...rest } = e;
