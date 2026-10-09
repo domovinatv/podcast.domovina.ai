@@ -1,0 +1,57 @@
+---
+import Base from "../../layouts/Base.astro";
+import FeedItem from "../../components/FeedItem.astro";
+import DayTimeline from "../../components/DayTimeline.astro";
+import catalog, { archiveDays, longDate, hoursLabel, plural, thumbUrl } from "../../lib/catalog.js";
+
+export function getStaticPaths() {
+    // archiveDays je najnoviji-prvi: „noviji" je prethodni element, „stariji" sljedeći.
+    return archiveDays.map((d, i) => ({
+        params: { date: d.date },
+        props: { d, newer: archiveDays[i - 1]?.date || null, older: archiveDays[i + 1]?.date || null },
+    }));
+}
+
+const { d, newer, older } = Astro.props;
+const groups = catalog.categories
+    .map(c => ({ ...c, items: d.items.filter(e => e.category === c.id) }))
+    .filter(g => g.items.length);
+
+const title = `Nove epizode, ${longDate(d.date).toLowerCase()} · Hrvatski podcasti`;
+const description = d.count
+    ? `${d.count} ${plural(d.count, "nova epizoda", "nove epizode", "novih epizoda")} hrvatskih podcasta iz ${d.channels} ${plural(d.channels, "kanala", "kanala", "kanala")}: ${d.items.slice(0, 4).map(e => e.name).join(", ")}${d.items.length > 4 ? "…" : ""}`
+    : `Nema novih epizoda hrvatskih podcasta za ${longDate(d.date).toLowerCase()}`;
+---
+<Base title={title} description={description} image={d.items[0] ? thumbUrl(d.items[0].id) : undefined}>
+    <div class="page page-days">
+      <div class="days-main">
+        <nav class="crumbs">
+            <a href="/">← Svi hrvatski podcasti</a>
+            <span class="muted">/</span>
+            <a href="/dani/">Po danima</a>
+        </nav>
+
+        <header class="days-head">
+            <h1><time datetime={d.date}>{longDate(d.date)}</time></h1>
+            <p class="days-sum">
+                <b>{d.count}</b> {plural(d.count, "nova epizoda", "nove epizode", "novih epizoda")}
+                {d.count > 0 && <> iz <b>{d.channels}</b> {plural(d.channels, "kanala", "kanala", "kanala")}{d.minutes > 0 && <> · {hoursLabel(d.minutes)} slušanja</>}</>}
+            </p>
+            <nav class="days-nav" aria-label="Drugi dani">
+                {older ? <a href={`/dani/${older}/`} rel="prev">← {longDate(older)}</a> : <span></span>}
+                {newer ? <a href={`/dani/${newer}/`} rel="next">{longDate(newer)} →</a> : <span></span>}
+            </nav>
+        </header>
+
+        {groups.map(g => (
+            <section class="days-group">
+                <h2><span class="cat-ico" aria-hidden="true">{g.icon}</span>{g.name} <span class="muted">{g.items.length}</span></h2>
+                <ul class="days-eps">{g.items.map(e => <FeedItem e={e} />)}</ul>
+            </section>
+        ))}
+        {d.count === 0 && <p class="muted">Taj dan nije izašla nijedna nova epizoda.</p>}
+      </div>
+      <aside class="days-side"><DayTimeline current={d.date} /></aside>
+    </div>
+    <script src="../../scripts/player.js"></script>
+</Base>

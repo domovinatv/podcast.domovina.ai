@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FETCH = path.resolve(process.env.FETCH_REPO || path.join(ROOT, "..", "fetch.domovina.tv"));
 const OUT = path.join(ROOT, "src", "data", "catalog.json");
+const DAYS_OUT = path.join(ROOT, "src", "data", "days.json");
 
 const EPISODES_PER_CHANNEL = 6;
 const FEED_SIZE = 120;
@@ -29,6 +30,10 @@ const FEED_WINDOW_DAYS = 21;
 // watch_candidates.js prvi put povuče najviše toliko zadnjih videa kanala (--baseline-items).
 // Kanal koji je napunio baseline ima više epizoda nego što vidimo — broj je onda donja granica.
 const WATCH_BASELINE_ITEMS = 60;
+// Arhiva po danima (/dani/) počinje prvom noći kad je watch pratio sve kandidate
+// (automatic/watchlist/events.jsonl). Raniji dani postoje samo iz baselinea
+// (zadnjih 60 videa kanala) i kod plodnih kanala bi bili krnji.
+const ARCHIVE_START = "2026-09-25";
 
 const readJson = (f, fallback) => {
     try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }
@@ -148,6 +153,7 @@ const CDN_AVATAR = slug => `https://cdn.domovina.ai/registry/avatars/${slug}.jpg
 
 const podcasts = [];
 const feed = [];
+const archive = [];
 const stats = { excluded: 0 };
 
 for (const p of registry.podcasts) {
@@ -250,6 +256,13 @@ for (const p of registry.podcasts) {
     podcasts.push(entry);
 
     for (const e of episodes) {
+        if (e.date < ARCHIVE_START) break;
+        if (e.date >= today) continue;                       // današnji dan još nije gotov
+        const { abstract, isNew, ...rest } = e;
+        archive.push({ ...rest, slug: p.slug, name: p.display_name, onDomovina, category: entry.category });
+    }
+
+    for (const e of episodes) {
         const age = daysSince(e.date);
         if (age == null || age > FEED_WINDOW_DAYS || age < 0) break;
         const { abstract, ...rest } = e;
@@ -279,9 +292,35 @@ const catalog = {
     podcasts: podcasts.sort((a, b) => a.name.localeCompare(b.name, "hr")),
 };
 
+// Arhiva po danima: SVE epizode od ARCHIVE_START do jučer, bez reza na FEED_SIZE.
+// Dan bez ijedne epizode ostaje u nizu (prazan), da navigacija ←/→ ne preskače kalendar.
+const catOrder = Object.fromEntries(CATEGORIES.map((c, i) => [c.id, i]));
+const archiveIds = new Set();
+const byDay = new Map();
+for (const e of archive.sort((a, b) => (catOrder[a.category] - catOrder[b.category]) || a.name.localeCompare(b.name, "hr") || a.title.localeCompare(b.title, "hr"))) {
+    if (archiveIds.has(e.id)) continue;
+    archiveIds.add(e.id);
+    if (!byDay.has(e.date)) byDay.set(e.date, []);
+    byDay.get(e.date).push(e);
+}
+const days = [];
+for (let d = ARCHIVE_START; d < today; d = new Date(Date.parse(d) + 86400000).toISOString().slice(0, 10)) {
+    const items = byDay.get(d) || [];
+    days.push({
+        date: d,
+        count: items.length,
+        channels: new Set(items.map(e => e.slug)).size,
+        minutes: items.reduce((s, e) => s + (e.min || 0), 0),
+        items,
+    });
+}
+days.reverse();                                              // najnoviji prvi
+
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(catalog));
+fs.writeFileSync(DAYS_OUT, JSON.stringify({ generated_at: catalog.generated_at, since: ARCHIVE_START, days }));
 const kb = Math.round(fs.statSync(OUT).size / 1024);
 console.log(`✅ ${OUT} — ${podcasts.length} podcasta (${stats.excluded} izvan kataloga), feed ${feedOut.length}, ${kb} KB`);
+console.log(`✅ ${DAYS_OUT} — ${days.length} dana od ${ARCHIVE_START}, ${archiveIds.size} epizoda, ${Math.round(fs.statSync(DAYS_OUT).size / 1024)} KB`);
 console.log("   " + catalog.categories.map(c => `${c.id}:${c.count}`).join(" "));
 console.log("   aktivnost: " + ["active", "slowing", "dormant", "finished", "unknown"].map(a => `${a}:${podcasts.filter(p => p.activity === a).length}`).join(" "));

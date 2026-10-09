@@ -15,7 +15,7 @@ scripts/refresh.sh   # isto što i deploy — za kraj nightly pipelinea
 ## Odakle podaci
 
 `scripts/build-catalog.mjs` čita (read-only) sibling repo `../fetch.domovina.tv`
-(ili `FETCH_REPO=...`) i piše `src/data/catalog.json`:
+(ili `FETCH_REPO=...`) i piše `src/data/catalog.json` i `src/data/days.json`:
 
 | Izvor | Što daje |
 |---|---|
@@ -47,3 +47,20 @@ Uspavani su u katalogu, ali sklopljeni po kategoriji.
   istu stranicu, pa postoji samo jedna implementacija.
 
 Epizode kanala na domovina.ai vode na `domovina.ai/v/<id>`, ostale na YouTube.
+
+## Nove epizode po danima (`/dani/`)
+
+Kronološka arhiva: `/dani/` je popis dana (broj epizoda, sati audia, tjedni blokovi),
+a `/dani/YYYY-MM-DD/` su sve epizode tog dana, grupirane po kategoriji, s ←/→
+navigacijom. Na početnoj je traka „Jučer: N epizoda · Svi dani →".
+
+- Podaci su `src/data/days.json`, koji slaže isti `build-catalog.mjs`: sve epizode od
+  `ARCHIVE_START` (25.09.2026., prva noć kad je watch pratio sve kandidate) **do jučer**,
+  bez reza na `FEED_SIZE`. Današnji dan se izostavlja jer još nije gotov.
+- Dan je **datum objave** na YouTubeu, ne noć otkrića. Datum iz flat liste je približan
+  („prije 1 dan"): nakon noći u kojoj watch nije radio epizode se razliju na susjedni dan
+  (zato 03.10. ima 4, a 04.10. 22). Točan broj po noći je u
+  `fetch.domovina.tv/automatic/watchlist/DAILY.md`.
+- Praćeni kanali ulaze tek kad su objavljeni na domovina.ai (bundle), pa se epizoda koja
+  se obrađuje danima naknadno pojavi na svom danu — stranice se ionako grade svaku noć.
+- Raniji dani bi bili krnji (watch baseline je samo zadnjih 60 videa kanala), pa ih nema.

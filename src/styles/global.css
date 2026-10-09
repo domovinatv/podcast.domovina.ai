@@ -348,3 +348,75 @@ dialog[open] { display: flex; flex-direction: column; }
 .rows-grid { columns: 280px; column-gap: 14px; }
 .rows-grid .row { break-inside: avoid; }
 @media (min-width: 900px) { body:has(.page) { display: block; height: auto; overflow: visible; } }
+
+/* ─── Arhiva po danima (/dani/) ──────────────────────────────────────────── */
+.days-head { margin-bottom: 20px; }
+.days-head h1 { font: 700 clamp(24px, 3.4vw, 32px)/1.15 var(--display); letter-spacing: -.01em; margin-bottom: 6px; }
+.days-head > .muted { max-width: 62ch; }
+.days-head .facts { margin-top: 14px; }
+.days-sum { font-size: 15px; margin: 4px 0 12px; }
+.days-nav { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; font-weight: 500; }
+.days-week { margin-top: 22px; }
+.days-week h2, .days-group h2 {
+    display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+    font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+}
+.days-group h2 { font: 700 15.5px var(--display); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.days-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.days-list li + li { border-top: 1px solid var(--line); }
+.days-row { display: grid; grid-template-columns: minmax(0, 15em) 1fr 7.5em 4em; align-items: center; gap: 12px; padding: 9px 14px; }
+.days-row:hover { color: inherit; background: var(--surface-2); }
+.days-row:hover .days-date { color: var(--accent); }
+.days-date { font-weight: 500; }
+.days-bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.days-bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.days-n, .days-h { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.days-group { margin-top: 22px; }
+.days-eps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 2px 12px; }
+.days-note { margin-top: 24px; font-size: 13px; max-width: 70ch; }
+.days-strip { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px 10px; font-size: 12.5px; }
+.days-strip a { font-weight: 600; }
+@media (max-width: 560px) {
+    .days-row { grid-template-columns: 1fr auto; row-gap: 6px; }
+    .days-bar { grid-column: 1 / -1; grid-row: 2; }
+    .days-h { display: none; }
+}
+
+/* ─── Timeline dana (desno, najnoviji gore) ──────────────────────────────── */
+.page-days { max-width: 1240px; display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 32px; align-items: start; }
+.days-side { position: sticky; top: 16px; padding-left: 6px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.tl { border-left: 1px solid var(--line); padding-left: 0; }
+.tl ol { list-style: none; margin: 0; padding: 0; }
+.tl-all { display: block; padding: 2px 0 10px 14px; font-size: 13px; font-weight: 600; }
+.tl-month h3 {
+    position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 8px 0 4px 14px;
+    font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+}
+.tl-day { position: relative; display: grid; grid-template-columns: 4.6em 1fr 1.8em; align-items: center; gap: 8px; padding: 5px 8px 5px 14px; border-radius: 0 8px 8px 0; font-size: 13px; }
+.tl-day:hover { background: var(--surface); color: inherit; }
+.tl-dot { position: absolute; left: -4px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--muted); }
+.tl-date { white-space: nowrap; color: var(--ink-2); }
+.tl-we .tl-date { color: var(--muted); }
+.tl-bar { height: 5px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.tl-bar span { display: block; height: 100%; background: var(--muted); opacity: .55; border-radius: 3px; }
+.tl-n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tl-day[aria-current="page"] { background: var(--surface); box-shadow: var(--shadow); }
+.tl-day[aria-current="page"] .tl-dot { background: var(--accent); border-color: var(--accent); width: 9px; height: 9px; left: -5px; margin-top: -4.5px; }
+.tl-day[aria-current="page"] .tl-date, .tl-day[aria-current="page"] .tl-n { color: var(--ink); font-weight: 600; }
+.tl-day[aria-current="page"] .tl-bar span { background: var(--accent); opacity: 1; }
+
+/* Mobitel: timeline postaje vodoravna traka iznad sadržaja (najnoviji lijevo). */
+@media (max-width: 899px) {
+    .page-days { display: flex; flex-direction: column-reverse; gap: 0; }
+    .page-days > * { width: 100%; }
+    .days-side { position: static; max-height: none; overflow-x: auto; overflow-y: hidden; margin: 0 -16px 8px; padding: 0 16px 4px; scrollbar-width: none; }
+    .tl { display: flex; align-items: stretch; gap: 4px; border-left: 0; width: max-content; }
+    .tl-all, .tl-month h3 { display: none; }
+    .tl-month ol { display: flex; gap: 4px; }
+    .tl-day { grid-template-columns: auto; justify-items: center; gap: 2px; padding: 6px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); min-width: 52px; }
+    .tl-dot, .tl-bar { display: none; }
+    .tl-date { font-size: 12px; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+    .tl-n { text-align: center; font-size: 11px; }
+    .tl-day[aria-current="page"] { background: var(--ink); border-color: var(--ink); box-shadow: none; }
+    .tl-day[aria-current="page"] .tl-date, .tl-day[aria-current="page"] .tl-n { color: var(--bg); }
+}

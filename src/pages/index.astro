@@ -2,9 +2,10 @@
 import Base from "../layouts/Base.astro";
 import Row from "../components/Row.astro";
 import FeedItem from "../components/FeedItem.astro";
-import catalog, { BUILD_DATE, byFreshness, shortDate } from "../lib/catalog.js";
+import catalog, { BUILD_DATE, byFreshness, shortDate, archiveDays, plural } from "../lib/catalog.js";
 
 const { totals, categories, podcasts, feed } = catalog;
+const lastDay = archiveDays[0];
 
 // Uspavani kanali su u katalogu, ali sklopljeni: na velikom ekranu bi inače 200+
 // redova koji ništa ne objavljuju gurali aktivne ispod pregiba.
@@ -87,6 +88,12 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
                 <h2 id="feed-h">Upravo stiglo</h2>
                 <span class="muted">nove epizode, svaku noć</span>
             </div>
+            {lastDay && (
+                <p class="days-strip">
+                    <a href={`/dani/${lastDay.date}/`}><time datetime={lastDay.date} data-day>{shortDate(lastDay.date)}</time>: {lastDay.count} {plural(lastDay.count, "epizoda", "epizode", "epizoda")}</a>
+                    <a href="/dani/">Svi dani →</a>
+                </p>
+            )}
             <div class="feed-scroll">
                 {days.map(d => (
                     <section class="day" data-date={d.date}>
@@ -125,7 +132,7 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
                     <a href="https://www.domovina.ai">domovina.ai</a> — članci, poglavlja i pretraga po izgovorenom.
                 </p>
                 <p class="muted">
-                    Ažurirano {shortDate(BUILD_DATE)} · Fali podcast?
+                    Ažurirano {shortDate(BUILD_DATE)} · <a href="/dani/">Nove epizode po danima</a> · Fali podcast?
                     <a href="https://github.com/domovinatv/fetch.domovina.tv/issues/new?template=add-podcast.yml" rel="noopener">Predloži ga</a>
                 </p>
             </footer>

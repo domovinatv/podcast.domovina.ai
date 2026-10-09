@@ -1,0 +1,61 @@
+---
+import Base from "../../layouts/Base.astro";
+import { archiveDays, ARCHIVE_SINCE, longDate, shortDate, hoursLabel, plural } from "../../lib/catalog.js";
+
+const max = Math.max(1, ...archiveDays.map(d => d.count));
+const total = archiveDays.reduce((s, d) => s + d.count, 0);
+const avg = archiveDays.length ? Math.round((total / archiveDays.length) * 10) / 10 : 0;
+const minutes = archiveDays.reduce((s, d) => s + d.minutes, 0);
+
+// Tjedni blokovi (pon–ned) da se vidi ritam tjedna.
+const weeks = [];
+for (const d of archiveDays) {
+    const [y, m, dd] = d.date.split("-").map(Number);
+    const wd = (new Date(Date.UTC(y, m - 1, dd)).getUTCDay() + 6) % 7;      // 0 = ponedjeljak
+    const monday = new Date(Date.UTC(y, m - 1, dd - wd)).toISOString().slice(0, 10);
+    if (weeks.at(-1)?.monday !== monday) weeks.push({ monday, days: [] });
+    weeks.at(-1).days.push(d);
+}
+
+const title = "Nove epizode po danima · Hrvatski podcasti";
+const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mjestu. U prosjeku ${avg} novih epizoda dnevno od ${shortDate(ARCHIVE_SINCE)}.`;
+---
+<Base title={title} description={description}>
+    <div class="page">
+        <nav class="crumbs">
+            <a href="/">← Svi hrvatski podcasti</a>
+        </nav>
+        <header class="days-head">
+            <h1>Nove epizode po danima</h1>
+            <p class="muted">Sve što su hrvatski podcasti objavili, dan po dan. YouTube ovo ne nudi — tamo vidiš samo kanale koje već pratiš.</p>
+            <dl class="facts">
+                <div><dt>prosjek dnevno</dt><dd>{String(avg).replace(".", ",")}</dd></div>
+                <div><dt>epizoda od {shortDate(ARCHIVE_SINCE)}</dt><dd>{total}</dd></div>
+                <div><dt>sati audia</dt><dd>{Math.round(minutes / 60)}</dd></div>
+            </dl>
+        </header>
+
+        {weeks.map(w => (
+            <section class="days-week">
+                <h2>Tjedan od {shortDate(w.monday)}</h2>
+                <ul class="days-list">
+                    {w.days.map(d => (
+                        <li>
+                            <a href={`/dani/${d.date}/`} class="days-row">
+                                <span class="days-date"><time datetime={d.date}>{longDate(d.date)}</time></span>
+                                <span class="days-bar" aria-hidden="true"><span style={`width:${Math.round((d.count / max) * 100)}%`}></span></span>
+                                <span class="days-n"><b>{d.count}</b> {plural(d.count, "epizoda", "epizode", "epizoda")}</span>
+                                <span class="days-h muted">{d.minutes ? hoursLabel(d.minutes) : ""}</span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        ))}
+
+        <p class="muted days-note">
+            Dan je datum objave na YouTubeu. Popis videa ne daje točan sat, pa epizoda objavljena
+            kasno navečer ponekad padne na susjedni dan. Kratki isječci, najave i Shorts nisu uključeni.
+        </p>
+    </div>
+</Base>

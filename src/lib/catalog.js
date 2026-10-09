@@ -60,3 +60,28 @@ export const ACTIVITY_LABEL = {
 
 // Redoslijed unutar kategorije: najsvježiji prvi, a bez datuma na kraj.
 export const byFreshness = (a, b) => (b.last || "").localeCompare(a.last || "") || a.name.localeCompare(b.name, "hr");
+
+// Arhiva po danima (/dani/) — slaže je build-catalog.mjs u days.json, najnoviji dan prvi.
+import daysData from "../data/days.json";
+export const archiveDays = daysData.days;
+export const ARCHIVE_SINCE = daysData.since;
+
+const WEEKDAYS_LONG = ["nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"];
+const MONTHS_GEN = ["siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja", "srpnja", "kolovoza", "rujna", "listopada", "studenoga", "prosinca"];
+// „Četvrtak, 8. listopada 2026." — puni datum za naslove dnevnih stranica.
+export function longDate(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const wd = WEEKDAYS_LONG[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return `${wd[0].toUpperCase()}${wd.slice(1)}, ${d}. ${MONTHS_GEN[m - 1]} ${y}.`;
+}
+
+// „21 h" / „45 min" — ukupno audia u danu.
+export const hoursLabel = min => min >= 90 ? `${Math.round(min / 60)} h` : `${min} min`;
+
+// Hrvatska množina: 1 epizoda, 2–4 epizode, 5+ epizoda (11–14 uvijek „epizoda").
+export function plural(n, one, few, many) {
+    const t = n % 10, h = n % 100;
+    if (t === 1 && h !== 11) return one;
+    if (t >= 2 && t <= 4 && (h < 12 || h > 14)) return few;
+    return many;
+}
