@@ -1,0 +1,51 @@
+---
+// Epizode po danu kroz godinu: tanki stupci (dan) + crta 7-dnevnog prosjeka.
+// SVG nosi samo oznake i rasteže se (preserveAspectRatio="none"); tekst osi je HTML
+// postavljen u postocima, pa ostaje čitljiv na svakoj širini.
+import { archiveDays, longDate, plural } from "../lib/catalog.js";
+
+const days = archiveDays.slice().reverse();                  // kronološki
+const n = days.length;
+const W = 1000, H = 220;
+const yMax = Math.max(10, Math.ceil(Math.max(...days.map(d => d.count)) / 10) * 10);
+const y = v => H - (v / yMax) * H;
+const step = W / n;
+
+// Prosjek zadnjih 7 dana (uključujući taj dan); prvih 6 dana nema pun prozor.
+const avg = days.map((d, i) => i < 6 ? null : days.slice(i - 6, i + 1).reduce((s, x) => s + x.count, 0) / 7);
+const line = avg.map((v, i) => v == null ? null : `${(i + 0.5) * step},${y(v).toFixed(1)}`).filter(Boolean).join(" ");
+
+const MON = ["sij", "velj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"];
+const months = days.map((d, i) => ({ d, i })).filter(({ d }) => d.date.endsWith("-01"))
+    .map(({ d, i }) => ({ left: (i / n) * 100, label: MON[+d.date.slice(5, 7) - 1] }));
+const grid = Array.from({ length: yMax / 10 + 1 }, (_, k) => k * 10);
+const fmt = v => v.toFixed(1).replace(".", ",");
+---
+<figure class="yc" aria-labelledby="yc-cap">
+    <figcaption id="yc-cap" class="chart-head">
+        <h2>Epizode po danu kroz godinu</h2>
+        <span class="legend">
+            <span class="lg"><i class="lg-bar"></i>dan</span>
+            <span class="lg"><i class="lg-line"></i>prosjek 7 dana</span>
+        </span>
+    </figcaption>
+    <div class="yc-plot">
+        {grid.map(v => <span class="yc-grid" style={`bottom:${(v / yMax) * 100}%`}><span>{v}</span></span>)}
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+            {days.map((d, i) => d.count > 0 && (
+                <rect x={(i * step + step * 0.15).toFixed(2)} y={y(d.count).toFixed(1)} width={(step * 0.7).toFixed(2)} height={(H - y(d.count)).toFixed(1)} class="yc-bar" />
+            ))}
+            <polyline points={line} class="yc-line" vector-effect="non-scaling-stroke" />
+        </svg>
+        <div class="yc-hits">
+            {days.map((d, i) => (
+                <a href={`/dani/${d.date}/`} style={`left:${(i / n) * 100}%;width:${100 / n}%`}
+                   data-tip={`${longDate(d.date)}\n${d.count} ${plural(d.count, "epizoda", "epizode", "epizoda")}${avg[i] != null ? ` · prosjek 7 dana ${fmt(avg[i])}` : ""}`}
+                   aria-label={`${longDate(d.date)}: ${d.count}`}></a>
+            ))}
+        </div>
+    </div>
+    <div class="yc-x" aria-hidden="true">
+        {months.map(m => <span style={`left:${m.left}%`}>{m.label}</span>)}
+    </div>
+</figure>

@@ -345,7 +345,13 @@ days.reverse();                                              // najnoviji prvi
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(catalog));
-fs.writeFileSync(DAYS_OUT, JSON.stringify({ generated_at: catalog.generated_at, since: ARCHIVE_START, days }));
+// Sat objave (Europe/Zagreb) — samo iz backfilla, jedini izvor s točnim trenutkom objave.
+const ZAGREB_HOUR = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Zagreb", hour: "2-digit", hourCycle: "h23" });
+const hours = Array(24).fill(0);
+for (const c of Object.values(backfill)) for (const o of Object.values(c.originals || {})) {
+    if (o.published_at && o.date >= ARCHIVE_START && o.date < today) hours[+ZAGREB_HOUR.format(new Date(o.published_at))]++;
+}
+fs.writeFileSync(DAYS_OUT, JSON.stringify({ generated_at: catalog.generated_at, since: ARCHIVE_START, hours, days }));
 const kb = Math.round(fs.statSync(OUT).size / 1024);
 console.log(`✅ ${OUT} — ${podcasts.length} podcasta (${stats.excluded} izvan kataloga), feed ${feedOut.length}, ${kb} KB`);
 console.log(`✅ ${DAYS_OUT} — ${days.length} dana od ${ARCHIVE_START}, ${archiveIds.size} epizoda, ${Math.round(fs.statSync(DAYS_OUT).size / 1024)} KB`);

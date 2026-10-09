@@ -1,0 +1,85 @@
+---
+// „Ritam": prosjek epizoda po danu u tjednu + sat objave (Europe/Zagreb, iz backfilla).
+import { archiveDays, publishHours } from "../lib/catalog.js";
+
+const W = ["pon", "uto", "sri", "čet", "pet", "sub", "ned"];
+const WL = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"];
+const wd = iso => (new Date(iso + "T12:00:00Z").getUTCDay() + 6) % 7;     // 0 = ponedjeljak
+const sums = W.map(() => [0, 0]);
+for (const d of archiveDays) { const k = wd(d.date); sums[k][0] += d.count; sums[k][1]++; }
+const avgs = sums.map(([s, n]) => n ? s / n : 0);
+const overall = archiveDays.reduce((s, d) => s + d.count, 0) / Math.max(1, archiveDays.length);
+const wMax = Math.max(...avgs);
+
+// Koliko je puta koji dan bio najjači u punom tjednu (pon–ned).
+const weeks = new Map();
+for (const d of archiveDays) {
+    const t = new Date(d.date + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() - wd(d.date));
+    const k = t.toISOString().slice(0, 10);
+    if (!weeks.has(k)) weeks.set(k, []);
+    weeks.get(k).push(d);
+}
+const full = [...weeks.values()].filter(w => w.length === 7);
+const peaks = W.map(() => 0);
+for (const w of full) { const mx = Math.max(...w.map(d => d.count)); for (const d of w) if (d.count === mx) peaks[wd(d.date)]++; }
+const top = peaks.indexOf(Math.max(...peaks));
+const weekendShare = Math.round((1 - (avgs[5] + avgs[6]) / 2 / ((avgs[0] + avgs[1] + avgs[2] + avgs[3] + avgs[4]) / 5)) * 100);
+
+const hTotal = publishHours.reduce((s, v) => s + v, 0);
+const hMax = Math.max(1, ...publishHours);
+const peakHour = publishHours.indexOf(hMax);
+const evening = hTotal ? Math.round(((publishHours[18] + publishHours[19] + publishHours[20]) / hTotal) * 100) : 0;
+const fmt = v => v.toFixed(1).replace(".", ",");
+const pct = v => `${Math.round((v / Math.max(1, hTotal)) * 100)} %`;
+---
+<section class="rhythm" aria-labelledby="rh-h">
+    <h2 id="rh-h" class="rh-title">Ritam</h2>
+    <div class="rh-grid">
+        <figure class="rh-card">
+            <figcaption class="chart-head"><h3>Prosjek po danu u tjednu</h3></figcaption>
+            <div class="bars bars-wd">
+                {avgs.map((v, i) => (
+                    <div class="bar-col" data-tip={`${WL[i]}\nprosjek ${fmt(v)} epizoda · najjači dan tjedna ${peaks[i]}× od ${full.length}`}>
+                        <span class="bar-val">{fmt(v)}</span>
+                        <span class:list={["bar", { "bar-hi": i === top }]} style={`height:${(v / wMax) * 100}%`}></span>
+                        <span class="bar-lab">{W[i]}</span>
+                    </div>
+                ))}
+            </div>
+            <p class="rh-note">
+                <b>{WL[top][0].toUpperCase() + WL[top].slice(1)}</b> je najčešće najjači dan ({peaks[top]} od {full.length} tjedana).
+                Vikendom izlazi oko {weekendShare} % manje epizoda nego radnim danom.
+            </p>
+        </figure>
+
+        {hTotal > 0 && (
+            <figure class="rh-card">
+                <figcaption class="chart-head"><h3>Sat objave</h3><span class="muted">hrvatsko vrijeme</span></figcaption>
+                <div class="bars bars-h">
+                    {publishHours.map((v, h) => (
+                        <div class="bar-col" data-tip={`${String(h).padStart(2, "0")}:00–${String(h).padStart(2, "0")}:59\n${v} epizoda (${pct(v)})`}>
+                            <span class:list={["bar", { "bar-hi": h === peakHour }]} style={`height:${(v / hMax) * 100}%`}></span>
+                            <span class="bar-lab">{h % 3 === 0 ? String(h).padStart(2, "0") : ""}</span>
+                        </div>
+                    ))}
+                </div>
+                <p class="rh-note">
+                    Najviše epizoda izlazi u <b>{peakHour}–{peakHour + 1} h</b> ({pct(hMax)}). Između 18 i 21 h objavi se {evening} % svih epizoda.
+                </p>
+            </figure>
+        )}
+    </div>
+    <details class="rh-table">
+        <summary>Tablica</summary>
+        <table>
+            <thead><tr><th>dan</th><th>prosjek epizoda</th><th>indeks</th><th>najjači dan tjedna</th></tr></thead>
+            <tbody>{avgs.map((v, i) => <tr><td>{WL[i]}</td><td>{fmt(v)}</td><td>{Math.round((v / overall) * 100)} %</td><td>{peaks[i]}×</td></tr>)}</tbody>
+        </table>
+        {hTotal > 0 && (
+            <table>
+                <thead><tr><th>sat</th><th>epizoda</th><th>udio</th></tr></thead>
+                <tbody>{publishHours.map((v, h) => <tr><td>{String(h).padStart(2, "0")} h</td><td>{v}</td><td>{pct(v)}</td></tr>)}</tbody>
+            </table>
+        )}
+    </details>
+</section>

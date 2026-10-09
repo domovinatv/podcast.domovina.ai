@@ -1,5 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
+import YearChart from "../../components/YearChart.astro";
+import Rhythm from "../../components/Rhythm.astro";
 import { archiveDays, ARCHIVE_SINCE, longDate, shortDate, hoursLabel, plural } from "../../lib/catalog.js";
 
 const max = Math.max(1, ...archiveDays.map(d => d.count));
@@ -35,6 +37,9 @@ const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mje
             </dl>
         </header>
 
+        <YearChart />
+        <Rhythm />
+
         {weeks.map(w => (
             <section class="days-week">
                 <h2>Tjedan od {shortDate(w.monday)}</h2>
@@ -59,4 +64,32 @@ const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mje
             ugašeni kanali ne vide se, pa stariji dani mogu biti malo podcijenjeni.
         </p>
     </div>
+    <div class="tip" role="tooltip" hidden></div>
+    <script>
+        // Jedan tooltip za sve grafove: [data-tip] = tekst, prvi red podebljan.
+        const tip = document.querySelector(".tip");
+        let cur = null;
+        function show(el, x, y) {
+            if (el !== cur) {
+                cur = el;
+                const [head, ...rest] = el.dataset.tip.split("\n");
+                tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: head }), ...rest.map(t => Object.assign(document.createElement("span"), { textContent: t })));
+            }
+            tip.hidden = false;
+            const r = tip.getBoundingClientRect();
+            const left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x - r.width / 2));
+            const top = y - r.height - 14 < 8 ? y + 18 : y - r.height - 14;
+            tip.style.transform = `translate(${left}px, ${top}px)`;
+        }
+        document.addEventListener("pointermove", e => {
+            const el = e.target.closest?.("[data-tip]");
+            if (el) show(el, e.clientX, e.clientY); else { tip.hidden = true; cur = null; }
+        });
+        document.addEventListener("focusin", e => {
+            const el = e.target.closest?.("[data-tip]");
+            if (el) { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); }
+        });
+        document.addEventListener("focusout", () => { tip.hidden = true; cur = null; });
+        window.addEventListener("scroll", () => { tip.hidden = true; cur = null; }, { passive: true });
+    </script>
 </Base>

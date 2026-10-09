@@ -420,3 +420,61 @@ dialog[open] { display: flex; flex-direction: column; }
     .tl-day[aria-current="page"] { background: var(--ink); border-color: var(--ink); box-shadow: none; }
     .tl-day[aria-current="page"] .tl-date, .tl-day[aria-current="page"] .tl-n { color: var(--bg); }
 }
+
+/* ─── Grafovi na /dani/ (godina + ritam) ─────────────────────────────────── */
+.chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.chart-head h2, .chart-head h3 { font: 700 15.5px var(--display); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.lg { display: inline-flex; align-items: center; gap: 6px; }
+.lg-bar { width: 8px; height: 12px; border-radius: 2px 2px 0 0; background: var(--chart-bar); }
+.lg-line { width: 16px; height: 2px; border-radius: 1px; background: var(--accent); }
+:root { --chart-bar: #cfc7b9; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chart-bar: #3a404b; } }
+:root[data-theme="dark"] { --chart-bar: #3a404b; }
+
+.yc { margin: 24px 0 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 10px; }
+.yc-plot { position: relative; height: 220px; margin-left: 24px; }
+.yc-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.yc-bar { fill: var(--chart-bar); }
+.yc-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.yc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--line); }
+.yc-grid span { position: absolute; right: calc(100% + 6px); top: -7px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.yc-hits { position: absolute; inset: 0; }
+.yc-hits a { position: absolute; top: 0; bottom: 0; }
+.yc-hits a:hover, .yc-hits a:focus-visible { background: color-mix(in srgb, var(--ink) 8%, transparent); outline: none; border-radius: 2px; }
+.yc-x { position: relative; height: 18px; margin: 4px 0 0 24px; font-size: 11px; color: var(--muted); }
+.yc-x span { position: absolute; top: 0; padding-left: 3px; border-left: 1px solid var(--line); }
+
+.rhythm { margin-top: 28px; }
+.rh-title { font: 700 clamp(20px, 2.6vw, 24px)/1.2 var(--display); margin-bottom: 12px; }
+.rh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px; }
+.rh-card { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.rh-note { margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+.bars { display: flex; align-items: stretch; height: 170px; }
+.bars-wd { gap: 8px; }
+.bars-h { gap: 2px; height: 150px; }
+.bar-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; cursor: default; border-radius: 4px; }
+.bar-col:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.bar { width: 100%; max-width: 44px; background: var(--chart-bar); border-radius: 4px 4px 0 0; }
+.bars-h .bar { border-radius: 2px 2px 0 0; }
+.bar-hi { background: var(--accent); }
+.bar-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bar-lab { font-size: 11px; color: var(--muted); height: 14px; line-height: 14px; font-variant-numeric: tabular-nums; }
+.rh-table { margin-top: 10px; font-size: 13px; }
+.rh-table summary { cursor: pointer; color: var(--muted); font-weight: 500; }
+.rh-table table { border-collapse: collapse; margin: 10px 16px 0 0; display: inline-table; vertical-align: top; font-variant-numeric: tabular-nums; }
+.rh-table th, .rh-table td { text-align: left; padding: 3px 12px 3px 0; border-bottom: 1px solid var(--line); }
+.rh-table th { color: var(--muted); font-weight: 500; }
+
+.tip {
+    position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; max-width: 260px;
+    display: flex; flex-direction: column; gap: 2px; padding: 7px 10px; border-radius: 8px;
+    background: var(--ink); color: var(--bg); font-size: 12px; line-height: 1.35; box-shadow: var(--shadow);
+}
+.tip b { font-weight: 600; }
+@media (max-width: 560px) {
+    .yc { padding: 12px 10px 8px; }
+    .yc-plot { height: 160px; }
+    .bars-wd { gap: 4px; }
+    .bar-val { font-size: 11px; }
+}

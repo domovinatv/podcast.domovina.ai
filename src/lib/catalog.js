@@ -65,6 +65,7 @@ export const byFreshness = (a, b) => (b.last || "").localeCompare(a.last || "") 
 import daysData from "../data/days.json";
 export const archiveDays = daysData.days;
 export const ARCHIVE_SINCE = daysData.since;
+export const publishHours = daysData.hours || [];
 
 const WEEKDAYS_LONG = ["nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"];
 const MONTHS_GEN = ["siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja", "srpnja", "kolovoza", "rujna", "listopada", "studenoga", "prosinca"];
