@@ -33,7 +33,15 @@ const WATCH_BASELINE_ITEMS = 60;
 // Arhiva po danima (/dani/). Točne datume objave daje automatic/watchlist/backfill.json
 // (YouTube Data API, automatic/backfill_days.js) od svoje granice `since`. Bez njega su datumi
 // iz watch-statea točni samo ~12 dana unatrag (flat lista: „prije 2 mjeseca").
-const ARCHIVE_START = readJson(path.join(FETCH, "automatic", "watchlist", "backfill.json"), {}).since || "2026-01-01";
+// Javna arhiva ne ide prije PUBLIC_START (ranije je postojalo premalo današnjih kanala da bi
+// dan predstavljao scenu), a ni prije granice NAJPLIĆEG kanala u backfillu: dok dublji prolaz
+// nije gotov za sve kanale, stariji dani bi bili napola prazni.
+const PUBLIC_START = "2020-01-01";
+const ARCHIVE_START = (() => {
+    const chans = Object.values(readJson(path.join(FETCH, "automatic", "watchlist", "backfill.json"), {}).channels || {});
+    const shallowest = chans.filter(c => c.since && !c.error).map(c => c.since).sort().at(-1);
+    return [PUBLIC_START, shallowest || "2026-01-01"].sort().at(-1);
+})();
 
 function readJson(f, fallback) {
     try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }

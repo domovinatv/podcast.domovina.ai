@@ -16,7 +16,9 @@ const avg = days.map((d, i) => i < 6 ? null : days.slice(i - 6, i + 1).reduce((s
 const line = avg.map((v, i) => v == null ? null : `${(i + 0.5) * step},${y(v).toFixed(1)}`).filter(Boolean).join(" ");
 
 const MON = ["sij", "velj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"];
-const months = days.map((d, i) => ({ d, i })).filter(({ d }) => d.date.endsWith("-01"))
+// Preko ~2,5 godine na osi su samo godine; inače mjeseci (siječanj nosi godinu).
+const yearsOnly = n > 900;
+const months = days.map((d, i) => ({ d, i })).filter(({ d }) => yearsOnly ? d.date.endsWith("-01-01") : d.date.endsWith("-01"))
     .map(({ d, i }) => ({ left: (i / n) * 100, label: d.date.slice(5, 7) === "01" ? d.date.slice(0, 4) : MON[+d.date.slice(5, 7) - 1], year: d.date.slice(5, 7) === "01", minor: !["01", "04", "07", "10"].includes(d.date.slice(5, 7)) }));
 const grid = Array.from({ length: yMax / 10 + 1 }, (_, k) => k * 10);
 const fmt = v => v.toFixed(1).replace(".", ",");
@@ -37,15 +39,29 @@ const fmt = v => v.toFixed(1).replace(".", ",");
             ))}
             <polyline points={line} class="yc-line" vector-effect="non-scaling-stroke" />
         </svg>
-        <div class="yc-hits">
-            {days.map((d, i) => (
-                <a href={`/dani/${d.date}/`} style={`left:${(i / n) * 100}%;width:${100 / n}%`}
-                   data-tip={`${longDate(d.date)}\n${d.count} ${plural(d.count, "epizoda", "epizode", "epizoda")}${avg[i] != null ? ` · prosjek 7 dana ${fmt(avg[i])}` : ""}`}
-                   aria-label={`${longDate(d.date)}: ${d.count}`}></a>
-            ))}
-        </div>
+        <div class="yc-hits" role="img" aria-label={`Graf epizoda po danu, ${days.length} dana. Pomakni miš za vrijednost, klik otvara dan.`}><span class="yc-guide" hidden></span></div>
+        <script type="application/json" class="yc-data" set:html={JSON.stringify(days.map((d, i) => [d.date, d.count, avg[i] == null ? null : Math.round(avg[i] * 10) / 10]))}></script>
     </div>
     <div class="yc-x" aria-hidden="true">
         {months.map(m => <span class:list={{ "yc-year": m.year, "yc-minor": m.minor }} style={`left:${m.left}%`}>{m.label}</span>)}
     </div>
 </figure>
+<script>
+    // Jedan sloj za hover cijelog grafa (umjesto linka po danu): indeks dana iz x-pozicije.
+    const WD = ["nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"];
+    const MG = ["siječnja", "veljače", "ožujka", "travnja", "svibnja", "lipnja", "srpnja", "kolovoza", "rujna", "listopada", "studenoga", "prosinca"];
+    const label = iso => { const [y, m, d] = iso.split("-").map(Number); const w = WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]; return `${w[0].toUpperCase()}${w.slice(1)}, ${d}. ${MG[m - 1]} ${y}.`; };
+    for (const fig of document.querySelectorAll(".yc")) {
+        const data = JSON.parse(fig.querySelector(".yc-data").textContent);
+        const hits = fig.querySelector(".yc-hits"), guide = fig.querySelector(".yc-guide");
+        const at = e => { const r = hits.getBoundingClientRect(); return Math.min(data.length - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * data.length))); };
+        hits.addEventListener("pointermove", e => {
+            const i = at(e), [date, c, avg] = data[i];
+            hits.dataset.tip = `${label(date)}\n${c} ${c % 10 === 1 && c % 100 !== 11 ? "epizoda" : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? "epizode" : "epizoda"}${avg != null ? ` · prosjek 7 dana ${String(avg).replace(".", ",")}` : ""}`;
+            guide.hidden = false;
+            guide.style.left = `${((i + 0.5) / data.length) * 100}%`;
+        });
+        hits.addEventListener("pointerleave", () => { guide.hidden = true; });
+        hits.addEventListener("click", e => { location.href = `/dani/${data[at(e)][0]}/`; });
+    }
+</script>

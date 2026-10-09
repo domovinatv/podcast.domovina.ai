@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import YearChart from "../../components/YearChart.astro";
 import Rhythm from "../../components/Rhythm.astro";
+import DayPicker from "../../components/DayPicker.astro";
 import { archiveDays, ARCHIVE_SINCE, longDate, shortDate, hoursLabel, plural } from "../../lib/catalog.js";
 
 const max = Math.max(1, ...archiveDays.map(d => d.count));
@@ -11,11 +12,13 @@ const minutes = archiveDays.reduce((s, d) => s + d.minutes, 0);
 
 // Tjedni blokovi (pon–ned) da se vidi ritam tjedna.
 const weeks = [];
+// Popis nosi samo zadnjih RECENT_WEEKS tjedana; ostatak arhive je u kalendaru (DayPicker).
+const RECENT_WEEKS = 6;
 for (const d of archiveDays) {
     const [y, m, dd] = d.date.split("-").map(Number);
     const wd = (new Date(Date.UTC(y, m - 1, dd)).getUTCDay() + 6) % 7;      // 0 = ponedjeljak
     const monday = new Date(Date.UTC(y, m - 1, dd - wd)).toISOString().slice(0, 10);
-    if (weeks.at(-1)?.monday !== monday) weeks.push({ monday, days: [] });
+    if (weeks.at(-1)?.monday !== monday) { if (weeks.length === RECENT_WEEKS) break; weeks.push({ monday, days: [] }); }
     weeks.at(-1).days.push(d);
 }
 
@@ -40,6 +43,9 @@ const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mje
         <YearChart />
         <Rhythm />
 
+        <div class="days-browse">
+          <div>
+            <h2 class="rh-title">Zadnji tjedni</h2>
         {weeks.map(w => (
             <section class="days-week">
                 <h2>Tjedan od {shortDate(w.monday)}</h2>
@@ -58,6 +64,13 @@ const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mje
             </section>
         ))}
 
+          </div>
+          <aside class="days-browse-side">
+            <h2 class="rh-title">Odaberi dan</h2>
+            <DayPicker />
+          </aside>
+        </div>
+
         <p class="muted days-note">
             Dan je datum objave na YouTubeu po hrvatskom vremenu. Kratki isječci, najave i Shorts
             nisu uključeni. Prošli dani prikazuju ono što je danas još javno — obrisani videi i
@@ -70,8 +83,8 @@ const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mje
         const tip = document.querySelector(".tip");
         let cur = null;
         function show(el, x, y) {
-            if (el !== cur) {
-                cur = el;
+            if (el.dataset.tip !== cur) {
+                cur = el.dataset.tip;
                 const [head, ...rest] = el.dataset.tip.split("\n");
                 tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: head }), ...rest.map(t => Object.assign(document.createElement("span"), { textContent: t })));
             }

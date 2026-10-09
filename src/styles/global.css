@@ -540,3 +540,14 @@ a.dp-day:hover { outline: 2px solid var(--ink); outline-offset: -1px; color: var
     .days-side { overflow: visible; margin: 0 0 8px; padding: 0; }
     .days-side .tl { width: auto; max-width: none; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
 }
+.dp-body { display: flex; flex-direction: column; gap: 12px; min-height: 420px; }
+.dp-step:disabled { opacity: .35; cursor: default; }
+.yc-hits { cursor: pointer; }
+.yc-guide { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--ink); opacity: .45; pointer-events: none; }
+.days-browse { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; margin-top: 28px; }
+.days-browse .days-week:first-of-type { margin-top: 0; }
+.days-browse-side { position: sticky; top: 16px; }
+@media (max-width: 899px) {
+    .days-browse { display: flex; flex-direction: column-reverse; gap: 16px; }
+    .days-browse-side .dp-all { display: none; }
+}
