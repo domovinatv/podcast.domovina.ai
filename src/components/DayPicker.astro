@@ -3,12 +3,14 @@
 // obojena prema broju epizoda (relativno na najjači dan arhive), pa se ritam vidi i ovdje.
 // Podaci dolaze iz /dani/kalendar.json (jedna datoteka za sve stranice); bez JS-a ostaje
 // „Idi na datum". Na mobitelu je vidljiv samo „Idi na datum" — traku dana daje DayTimeline.
+// lazy: birač stoji u skočnom prozoru (početna) — kalendar se dohvaća tek kad se prozor
+// otvori, i tada i na mobitelu (tamo nema DayTimelinea koji bi ga zamijenio).
 import { archiveDays } from "../lib/catalog.js";
 
-const { current = "" } = Astro.props;
+const { current = "", lazy = false } = Astro.props;
 const first = archiveDays.at(-1).date, last = archiveDays[0].date;
 ---
-<nav class="dp" aria-label="Odaberi dan" data-current={current} data-last={last}>
+<nav class="dp" aria-label="Odaberi dan" data-current={current} data-last={last} data-lazy={lazy ? "1" : undefined}>
     <div class="dp-head">
         <a href="/dani/" class="dp-all">Svi dani</a>
         <label class="dp-jump">
@@ -38,7 +40,7 @@ const first = archiveDays.at(-1).date, last = archiveDays[0].date;
         return n;
     }
 
-    if (dp && matchMedia("(min-width: 900px)").matches) {
+    function start() {
         fetch("/dani/kalendar.json").then(r => r.json()).then(({ max, days }) => {
             const counts = new Map(days);
             const current = dp.dataset.current;
@@ -100,4 +102,9 @@ const first = archiveDays.at(-1).date, last = archiveDays[0].date;
             render();
         });
     }
+
+    if (dp?.dataset.lazy) {
+        const pop = dp.closest("[popover]");
+        pop?.addEventListener("toggle", e => { if (e.newState === "open" && !dp.dataset.started) { dp.dataset.started = "1"; start(); } });
+    } else if (dp && matchMedia("(min-width: 900px)").matches) start();
 </script>

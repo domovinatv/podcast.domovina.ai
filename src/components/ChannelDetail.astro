@@ -40,6 +40,10 @@ const facts = [
     )}
 
     <div class="actions">
+        <button type="button" class="btn btn-follow" data-follow={p.slug} aria-pressed="false" title="Epizode praćenih podcasta izdvajaju se u „Moji” i na dnevnim stranicama. Pamti se samo u ovom pregledniku.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>
+            <span class="follow-label">Prati</span>
+        </button>
         {p.domovinaUrl && <a class="btn btn-primary" href={p.domovinaUrl} target="_blank" rel="noopener">Otvori na domovina.ai</a>}
         {p.youtube && <a class={`btn ${p.domovinaUrl ? "" : "btn-primary"}`} href={p.youtube} target="_blank" rel="noopener">YouTube kanal</a>}
         <a class="btn btn-ghost" href={`/p/${p.slug}/`} data-permalink>Trajna poveznica</a>

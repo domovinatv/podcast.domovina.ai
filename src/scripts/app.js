@@ -1,17 +1,21 @@
 // Interakcija početne stranice. Sav sadržaj je već u HTML-u (statički build), pa ovdje
 // samo skrivamo/otkrivamo i preslažemo — bez ikakvog dohvaćanja podataka, osim
 // detalja kanala koji se čita s njegove trajne stranice /p/<slug>/.
-import { applyRelative } from "./rel-time.js";
+import { applyRelative, daysAgo } from "./rel-time.js";
 import { stopInline } from "./player.js";
+import { following, onFollowChange, paint } from "./follow.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const fold = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").toLowerCase().trim();
 
 const params = new URLSearchParams(location.search);
+// „Moji" se pamti: tko prati podcaste, vraća se po njihove nove epizode.
+let rememberMine = false;
+try { rememberMine = localStorage.getItem("filter") === "mine"; } catch {}
 const state = {
     q: params.get("q") || "",
-    filter: params.get("f") || "all",
+    filter: params.get("f") || (rememberMine && following().size ? "mine" : "all"),
     cat: params.get("k") || "",
     sort: params.get("s") || "fresh",
 };
@@ -21,11 +25,15 @@ const panelsEl = $(".panels");
 const panels = $$(".panel");
 const feedItems = $$(".feed .ep");
 const days = $$(".feed .day");
+const feedScroll = $(".feed-scroll");
+const strip = $(".ds");
+const chips = $$(".ds-day[data-date]");
 
 // ─── Filtriranje ────────────────────────────────────────────────────────────
 function rowMatches(row, terms) {
     if (state.filter === "active" && row.dataset.act !== "active") return false;
     if (state.filter === "domovina" && !row.dataset.dom) return false;
+    if (state.filter === "mine" && !row.dataset.mine) return false;
     return terms.every(t => row.dataset.q.includes(t));
 }
 
@@ -59,13 +67,31 @@ function apply() {
     // Feed prati isti odabir: kategorija, „na domovina.ai", pretraga po naslovu i kanalu.
     const visibleSlugs = new Set($$(".row:not([hidden])").map(r => r.dataset.slug));
     for (const ep of feedItems) {
-        let ok = (!state.cat || ep.dataset.cat === state.cat) && (state.filter !== "domovina" || ep.dataset.dom);
+        let ok = (!state.cat || ep.dataset.cat === state.cat) && (state.filter !== "domovina" || ep.dataset.dom) && (state.filter !== "mine" || ep.dataset.mine);
         if (ok && terms.length) ok = visibleSlugs.has(ep.dataset.slug) || terms.every(t => fold(ep.textContent).includes(t));
         ep.hidden = !ok;
     }
+    // Dan ostaje vidljiv i kad je prazan (traka mora imati kamo skočiti), ali sklopljen.
     let anyDay = false;
-    for (const d of days) { d.hidden = !$(".ep:not([hidden])", d); anyDay ||= !d.hidden; }
-    $(".feed-empty").hidden = anyDay;
+    const filtered = !!state.cat || state.filter !== "all" || terms.length > 0;
+    for (const d of days) {
+        const n = $$(".ep:not([hidden])", d).length;
+        d.classList.toggle("day-empty", n === 0);
+        $(".day-n", d).textContent = filtered ? `${n} od ${$$(".ep", d).length}` : String(n);
+        const chip = chips.find(c => c.dataset.date === d.dataset.date);
+        if (chip) { chip.querySelector(".ds-n").textContent = n; chip.classList.toggle("ds-zero", n === 0); }
+        anyDay ||= n > 0;
+    }
+    // Stariji dani na traci nisu na stranici, pa ih odabir ne može prebrojati.
+    strip.classList.toggle("ds-filtered", filtered);
+    const empty = $(".feed-empty");
+    empty.hidden = anyDay;
+    empty.textContent = state.filter === "mine" && !following().size
+        ? "Još ne pratiš nijedan podcast. Otvori podcast u katalogu i klikni ☆ Prati — ovdje ćeš onda vidjeti samo njegove nove epizode, dan po dan."
+        : state.filter === "mine"
+            ? "Podcasti koje pratiš nisu objavili ništa novo u zadnjih tjedan dana. Starije dane nađi u kalendaru."
+            : "Nema novih epizoda za ovaj odabir u zadnjih tjedan dana.";
+    $(".mine-n").textContent = following().size || "";
 
     for (const b of $$(".seg button")) b.setAttribute("aria-pressed", String(b.dataset.filter === state.filter));
     for (const b of $$(".cat")) b.setAttribute("aria-pressed", String(b.dataset.cat === state.cat));
@@ -109,7 +135,13 @@ document.addEventListener("keydown", e => {
     }
 });
 
-for (const b of $$(".seg button")) b.addEventListener("click", () => { state.filter = b.dataset.filter; apply(); });
+for (const b of $$(".seg button")) b.addEventListener("click", () => {
+    state.filter = b.dataset.filter;
+    feedScroll.scrollTo({ top: 0 });
+    try { localStorage.setItem("filter", state.filter === "mine" ? "mine" : ""); } catch {}
+    apply();
+});
+onFollowChange(() => apply());
 
 for (const b of $$(".cat")) b.addEventListener("click", () => {
     state.cat = state.cat === b.dataset.cat ? "" : b.dataset.cat;
@@ -134,6 +166,8 @@ for (const t of $$(".mtabs [role=tab]")) t.addEventListener("click", () => {
     document.body.dataset.view = t.dataset.view;
     for (const x of $$(".mtabs [role=tab]")) x.setAttribute("aria-selected", String(x === t));
     window.scrollTo({ top: 0 });
+    stickyOffsets();
+    spy();
 });
 
 $("#theme").addEventListener("click", () => {
@@ -141,6 +175,66 @@ $("#theme").addEventListener("click", () => {
     const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     root.dataset.theme = dark ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+});
+
+// ─── Traka dana ─────────────────────────────────────────────────────────────
+// „danas"/„jučer" umjesto dana u tjednu, po satu posjetitelja.
+for (const t of $$("time[data-wd]", strip)) {
+    const n = daysAgo(t.getAttribute("datetime"));
+    if (n <= 1) { t.textContent = n <= 0 ? "danas" : "jučer"; t.parentElement.classList.add("ds-rel"); }
+}
+
+const mobile = () => matchMedia("(max-width: 899px)").matches;
+// Učitani dan: skok u feed (na mobitelu prvo prebaci na tab „Po danima"). Stariji: /dani/.
+strip.addEventListener("click", e => {
+    const a = e.target.closest(".ds-day[data-date]");
+    const sec = a && document.getElementById(`d-${a.dataset.date}`);
+    if (!sec || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    if (mobile()) {
+        $('.mtabs [data-view="feed"]').click();
+        const off = $(".mtabs").offsetHeight + strip.offsetHeight + 4;
+        window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - off });
+    } else {
+        feedScroll.scrollTo({ top: sec.offsetTop - feedScroll.offsetTop });
+    }
+    mark(a.dataset.date);
+});
+
+// Koji je dan trenutno na vrhu feeda → istakni ga na traci.
+let marked = "";
+function mark(date) {
+    if (date === marked) return;
+    marked = date;
+    for (const c of chips) c.toggleAttribute("aria-current", c.dataset.date === date);
+    const cur = chips.find(c => c.dataset.date === date);
+    const ol = cur?.closest("ol");
+    if (ol && (cur.offsetLeft < ol.scrollLeft || cur.offsetLeft + cur.offsetWidth > ol.scrollLeft + ol.clientWidth))
+        ol.scrollTo({ left: cur.offsetLeft - 8, behavior: "smooth" });
+}
+function spy() {
+    if (!feedScroll.offsetParent) return;               // feed je skriven (mobilni tab „Katalog")
+    const top = mobile() ? strip.getBoundingClientRect().bottom + 8 : feedScroll.getBoundingClientRect().top + 24;
+    let cur = days.find(d => !d.hidden);
+    for (const d of days) { if (d.getBoundingClientRect().top <= top) cur = d; else break; }
+    if (cur) mark(cur.dataset.date);
+}
+feedScroll.addEventListener("scroll", spy, { passive: true });
+function stickyOffsets() {
+    const tabs = $(".mtabs").offsetHeight;
+    document.documentElement.style.setProperty("--tabs-h", `${tabs}px`);
+    document.documentElement.style.setProperty("--ds-bottom", `${tabs + strip.offsetHeight}px`);
+}
+window.addEventListener("resize", stickyOffsets);
+window.addEventListener("scroll", spy, { passive: true });
+
+// Kalendar ispod gumba (popover nema sidrenje u svim preglednicima).
+const cal = $("#cal");
+cal.addEventListener("toggle", e => {
+    if (e.newState !== "open" || mobile()) return;
+    const r = $(".cal-btn").getBoundingClientRect();
+    cal.style.top = `${r.bottom + 8}px`;
+    cal.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - cal.offsetWidth - 8))}px`;
 });
 
 // ─── Detalj kanala u dijalogu ───────────────────────────────────────────────
@@ -165,6 +259,7 @@ async function openDetail(href) {
         const node = await load(href);
         dlgBody.replaceChildren(document.importNode(node, true));
         applyRelative(dlgBody);
+        paint(dlgBody);
         dlgBody.scrollTop = 0;
     } catch {
         location.href = href;
@@ -190,4 +285,6 @@ dlg.addEventListener("close", () => stopInline(dlg));
 // ─── Start ──────────────────────────────────────────────────────────────────
 if (state.sort !== "fresh") sortRows();
 apply();
+stickyOffsets();
+spy();
 if (state.cat) $(`.cat[data-cat="${state.cat}"]`)?.scrollIntoView({ block: "nearest", inline: "center" });

@@ -45,6 +45,11 @@ const description = d.count
             </nav>
         </header>
 
+        <section class="days-group days-mine" hidden>
+            <h2><span class="cat-ico" aria-hidden="true">★</span>Podcasti koje pratiš <span class="muted"></span></h2>
+            <ul class="days-eps"></ul>
+        </section>
+
         <div class="days-groups">
         {groups.map(g => (
             <section class="days-group">
@@ -67,4 +72,16 @@ const description = d.count
       <aside class="days-side"><DayPicker current={d.date} /><DayTimeline current={d.date} /></aside>
     </div>
     <script src="../../scripts/player.js"></script>
+    <script>
+        // Epizode praćenih podcasta (☆ Prati na početnoj) izdvojene na vrh dana —
+        // kopija, ne premještanje: u svojoj kategoriji ostaju gdje jesu.
+        import { following } from "../../scripts/follow.js";
+        const box = document.querySelector(".days-mine");
+        const mine = [...document.querySelectorAll(".days-groups .ep")].filter(e => following().has(e.dataset.slug));
+        if (mine.length) {
+            box.querySelector("ul").append(...mine.map(e => e.cloneNode(true)));
+            box.querySelector("h2 .muted").textContent = String(mine.length);
+            box.hidden = false;
+        }
+    </script>
 </Base>

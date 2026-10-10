@@ -551,3 +551,80 @@ a.dp-day:hover { outline: 2px solid var(--ink); outline-offset: -1px; color: var
     .days-browse { display: flex; flex-direction: column-reverse; gap: 16px; }
     .days-browse-side .dp-all { display: none; }
 }
+
+/* ─── Naslovnica: nove epizode po danima (traka dana + kalendar) ─────────── */
+.feed-head { align-items: center; }
+.feed-head h2 a:hover { color: var(--accent); }
+.cal-btn { width: 32px; height: 32px; border-radius: 9px; }
+.cal-btn svg { width: 16px; height: 16px; }
+.ds { padding: 0 0 6px; border-bottom: 1px solid var(--line); }
+.ds ol {
+    list-style: none; margin: 0; padding: 2px 16px 4px; display: flex; gap: 4px;
+    overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.ds ol::-webkit-scrollbar { display: none; }
+.ds-day {
+    display: grid; grid-template-rows: auto auto 8px auto; justify-items: center; align-items: center; gap: 1px;
+    width: 42px; padding: 5px 0 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+    font-variant-numeric: tabular-nums; line-height: 1.15;
+}
+.ds-day:hover { border-color: var(--ink-2); color: inherit; }
+.ds-wd { font-size: 10.5px; color: var(--muted); text-transform: lowercase; }
+.ds-we .ds-wd { color: var(--accent); opacity: .8; }
+.ds-rel { font-weight: 600; color: var(--ink-2); }
+.ds-d { font-size: 13px; font-weight: 600; }
+.ds-bar { width: 26px; height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.ds-bar span { display: block; height: 100%; background: var(--accent); border-radius: 2px; opacity: .8; }
+.ds-n { font-size: 11px; color: var(--muted); }
+.ds-far { border-style: dashed; background: none; }
+.ds-far .ds-bar span { background: var(--muted); opacity: .5; }
+.ds-filtered .ds-far .ds-n { visibility: hidden; }
+.ds-zero .ds-bar span { opacity: 0; }
+.ds-zero .ds-n { opacity: .5; }
+.ds-day[aria-current] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.ds-day[aria-current] :is(.ds-wd, .ds-n, .ds-rel) { color: var(--bg); opacity: .8; }
+.ds-day[aria-current] .ds-bar { background: color-mix(in srgb, var(--bg) 25%, transparent); }
+.ds-day[aria-current] .ds-bar span { background: var(--bg); opacity: 1; }
+.ds-more { grid-template-rows: 1fr; align-content: center; color: var(--muted); font-size: 11px; border-style: dashed; background: none; }
+.ds-more b { display: block; font-size: 16px; line-height: .6; }
+
+.day h3 { display: flex; align-items: baseline; gap: 8px; }
+.day-n { font-weight: 500; letter-spacing: 0; text-transform: none; }
+.day-open { margin-left: auto; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); }
+.day-empty ul { display: none; }
+.day-empty h3 { opacity: .6; }
+.feed-more { display: block; margin: 12px 8px 0; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; text-align: center; font-weight: 600; font-size: 13px; }
+
+.cal-pop {
+    position: fixed; inset: auto; margin: 0; width: 320px; padding: 14px; max-height: calc(100dvh - 24px); overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); box-shadow: 0 24px 80px rgb(0 0 0 / .25);
+}
+.cal-pop::backdrop { background: transparent; }
+.cal-pop .dp-body { min-height: 0; }
+@media (max-width: 899px) {
+    .cal-pop { left: 0; right: 0; bottom: 0; top: auto; width: 100%; border-radius: 16px 16px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+    .cal-pop::backdrop { background: rgb(15 12 8 / .45); }
+    .dp[data-lazy] > * { display: flex; }
+    .dp[data-lazy] .dp-all { display: inline; }
+    .dp[data-lazy] .dp-head { justify-content: space-between; }
+    /* Traka dana stoji ispod tabova; naslov dana ispod trake (visine mjeri app.js). */
+    .ds { position: sticky; top: var(--tabs-h, 41px); z-index: 3; background: var(--bg); padding-top: 4px; }
+    .ds ol { padding: 2px 16px 4px; }
+    .day h3 { top: var(--ds-bottom, 120px); }
+    .seg-na { display: none; }
+    .seg button { padding: 6px 2px; }
+    #sort { width: 7.5em; padding: 0 4px; }
+    .feed-head { padding: 12px 16px 8px; }
+}
+
+/* ─── Moji podcasti (☆ Prati) ────────────────────────────────────────────── */
+.btn-follow { gap: 6px; cursor: pointer; }
+.btn-follow svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.btn-follow[aria-pressed="true"] { border-color: var(--act-slowing); color: var(--ink); }
+.btn-follow[aria-pressed="true"] svg { fill: var(--act-slowing); stroke: var(--act-slowing); }
+.row[data-mine] .row-name::after { content: " ★"; color: var(--act-slowing); }
+.ep[data-mine] .ep-ch::before { content: "★"; color: var(--act-slowing); }
+.mine-n { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mine-n:empty { display: none; }
+.days-mine { margin: 6px 0 26px; padding: 12px 14px 8px; border: 1px solid color-mix(in srgb, var(--act-slowing) 45%, var(--line)); border-radius: var(--radius); background: var(--surface); }
+.days-mine .days-eps { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }

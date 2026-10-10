@@ -2,10 +2,10 @@
 import Base from "../layouts/Base.astro";
 import Row from "../components/Row.astro";
 import FeedItem from "../components/FeedItem.astro";
+import DayPicker from "../components/DayPicker.astro";
 import catalog, { BUILD_DATE, byFreshness, shortDate, archiveDays, plural } from "../lib/catalog.js";
 
-const { totals, categories, podcasts, feed } = catalog;
-const lastDay = archiveDays[0];
+const { totals, categories, podcasts } = catalog;
 
 // Uspavani kanali su u katalogu, ali sklopljeni: na velikom ekranu bi inače 200+
 // redova koji ništa ne objavljuju gurali aktivne ispod pregiba.
@@ -19,12 +19,18 @@ const panels = categories.map(c => {
     };
 });
 
-// Feed po danima — „danas/jučer" dopisuje app.js prema satu posjetitelja.
-const days = [];
-for (const e of feed) {
-    if (days.at(-1)?.date !== e.date) days.push({ date: e.date, items: [] });
-    days.at(-1).items.push(e);
-}
+// Feed po danima iz iste arhive kao /dani/, da broj na traci, u feedu i na dnevnoj
+// stranici bude isti. Na stranici je FEED_DAYS dana; traka nosi STRIP_DAYS, a stariji
+// od učitanih vode na svoju /dani/ stranicu. „Danas/jučer" dopisuje rel-time.js.
+const FEED_DAYS = 7, STRIP_DAYS = 14;
+const days = archiveDays.slice(0, FEED_DAYS);
+const stripMax = Math.max(1, ...archiveDays.slice(0, STRIP_DAYS).map(d => d.count));
+const WD = ["ned", "pon", "uto", "sri", "čet", "pet", "sub"];
+const strip = archiveDays.slice(0, STRIP_DAYS).map((d, i) => {
+    const [y, m, dd] = d.date.split("-").map(Number);
+    const wday = new Date(Date.UTC(y, m - 1, dd)).getUTCDay();
+    return { ...d, day: dd, wd: WD[wday], weekend: wday === 0 || wday === 6, loaded: i < FEED_DAYS };
+});
 
 const title = "Hrvatski podcasti — svi na jednom mjestu";
 const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorijama, s novim epizodama čim izađu. ${totals.active} aktivnih, ${totals.newThisWeek} novih epizoda u zadnjih 7 dana.`;
@@ -55,7 +61,8 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
             <div class="seg" role="radiogroup" aria-label="Prikaz">
                 <button type="button" data-filter="all" aria-pressed="true">Svi</button>
                 <button type="button" data-filter="active" aria-pressed="false">Aktivni</button>
-                <button type="button" data-filter="domovina" aria-pressed="false" title="Kanali obrađeni na domovina.ai — članci, poglavlja, pretraga">Na domovina.ai</button>
+                <button type="button" data-filter="domovina" aria-pressed="false" title="Kanali obrađeni na domovina.ai — članci, poglavlja, pretraga"><span class="seg-na">Na </span>domovina.ai</button>
+                <button type="button" data-filter="mine" aria-pressed="false" title="Podcasti koje pratiš (☆ Prati u detalju podcasta)">★ Moji <span class="mine-n"></span></button>
             </div>
             <select id="sort" aria-label="Poredak">
                 <option value="fresh">Najsvježiji</option>
@@ -79,29 +86,45 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
 
     <div class="mtabs" role="tablist">
         <button type="button" role="tab" data-view="catalog" aria-selected="true">Katalog</button>
-        <button type="button" role="tab" data-view="feed" aria-selected="false">Upravo stiglo <span class="badge">{totals.newThisWeek}</span></button>
+        <button type="button" role="tab" data-view="feed" aria-selected="false">Po danima <span class="badge">{days[0]?.count}</span></button>
     </div>
 
     <div class="layout">
         <aside class="feed" aria-labelledby="feed-h">
             <div class="feed-head">
-                <h2 id="feed-h">Upravo stiglo</h2>
-                <span class="muted">nove epizode, svaku noć</span>
+                <h2 id="feed-h"><a href="/dani/">Nove epizode po danima</a></h2>
+                <button type="button" class="icon-btn cal-btn" popovertarget="cal" aria-label="Odaberi dan u kalendaru" title="Kalendar — svi dani od 2020.">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+                </button>
             </div>
-            {lastDay && (
-                <p class="days-strip">
-                    <a href={`/dani/${lastDay.date}/`}><time datetime={lastDay.date} data-day>{shortDate(lastDay.date)}</time>: {lastDay.count} {plural(lastDay.count, "epizoda", "epizode", "epizoda")}</a>
-                    <a href="/dani/">Svi dani →</a>
-                </p>
-            )}
+            <nav class="ds" aria-label="Zadnji dani">
+                <ol>
+                    {strip.map(d => (
+                        <li>
+                            <a href={`/dani/${d.date}/`} class:list={["ds-day", { "ds-we": d.weekend, "ds-far": !d.loaded }]} data-date={d.date} data-n={d.count} title={`${d.count} ${plural(d.count, "epizoda", "epizode", "epizoda")}`}>
+                                <span class="ds-wd"><time datetime={d.date} data-wd>{d.wd}</time></span>
+                                <b class="ds-d">{d.day}.</b>
+                                <span class="ds-bar" aria-hidden="true"><span style={`width:${Math.max(8, Math.round((d.count / stripMax) * 100))}%`}></span></span>
+                                <span class="ds-n">{d.count}</span>
+                            </a>
+                        </li>
+                    ))}
+                    <li><a href="/dani/" class="ds-day ds-more" title="Svi dani od 2020.">sve<b>…</b></a></li>
+                </ol>
+            </nav>
             <div class="feed-scroll">
                 {days.map(d => (
-                    <section class="day" data-date={d.date}>
-                        <h3><time datetime={d.date} data-day>{shortDate(d.date)}</time></h3>
+                    <section class="day" data-date={d.date} id={`d-${d.date}`}>
+                        <h3>
+                            <time datetime={d.date} data-day>{shortDate(d.date)}</time>
+                            <span class="day-n">{d.count}</span>
+                            <a href={`/dani/${d.date}/`} class="day-open">cijeli dan →</a>
+                        </h3>
                         <ul>{d.items.map(e => <FeedItem e={e} />)}</ul>
                     </section>
                 ))}
-                <p class="feed-empty" hidden>Nema novih epizoda za ovaj odabir.</p>
+                <p class="feed-empty" hidden></p>
+                <a href="/dani/" class="feed-more">Stariji dani i kalendar →</a>
             </div>
         </aside>
 
@@ -138,6 +161,8 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
             </footer>
         </main>
     </div>
+
+    <div id="cal" popover class="cal-pop" aria-label="Kalendar dana"><DayPicker lazy /></div>
 
     <dialog id="detail" aria-label="Detalji podcasta">
         <button type="button" class="dlg-close icon-btn" aria-label="Zatvori" data-close>
