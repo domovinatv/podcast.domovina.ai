@@ -194,6 +194,8 @@ const stats = { excluded: 0 };
 for (const p of registry.podcasts) {
     const status = p.metadata?.status || "unknown";
     if (EXCLUDED_STATUS.has(status) || p.tracking?.permanently_excluded) { stats.excluded++; continue; }
+    // Krovni unos kanala (HRT, HKM, Laudato…) nema vlastitih epizoda — u katalogu su njegova djeca.
+    if (p.youtube?.type === "umbrella") { stats.excluded++; continue; }
 
     const tags = p.tags || [];
     const onDomovina = !!p.tracking?.enabled;
