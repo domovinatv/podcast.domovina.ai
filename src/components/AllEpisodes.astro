@@ -1,0 +1,49 @@
+---
+// Sve epizode kanala, po godinama i mjesecima. Stoji IZVAN #detail-root, jer dijalog na
+// početnoj dohvaća samo detalj — popis od tisuću epizoda ne treba putovati u dijalog.
+import { episodeUrl, domovinaPlayerUrl } from "../lib/catalog.js";
+import allEpisodes from "../data/episodes.json";
+
+const { p } = Astro.props;
+const eps = allEpisodes[p.slug] || [];
+
+const MONTHS = ["Siječanj", "Veljača", "Ožujak", "Travanj", "Svibanj", "Lipanj", "Srpanj", "Kolovoz", "Rujan", "Listopad", "Studeni", "Prosinac"];
+const years = [];
+for (const e of eps) {
+    const y = e.date.slice(0, 4), m = Number(e.date.slice(5, 7));
+    let yr = years.at(-1);
+    if (yr?.year !== y) years.push(yr = { year: y, count: 0, months: [] });
+    let mo = yr.months.at(-1);
+    if (mo?.m !== m) yr.months.push(mo = { m, eps: [] });
+    mo.eps.push(e);
+    yr.count++;
+}
+const day = iso => `${Number(iso.slice(8, 10))}.`;
+// 1 epizoda, 2–4 epizode, 5+ epizoda (11–14 uvijek „epizoda").
+const epizoda = n => n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "epizode" : "epizoda";
+---
+{eps.length > 0 && (
+    <section class="all-eps" id="sve-epizode">
+        <h2>Sve epizode <span class="muted">{eps.length}</span></h2>
+        {years.map((yr, i) => (
+            <details open={i === 0}>
+                <summary><span class="all-year">{yr.year}.</span> <span class="muted">{yr.count} {epizoda(yr.count)}</span></summary>
+                {yr.months.map(mo => (
+                    <>
+                        <h3>{MONTHS[mo.m - 1]}</h3>
+                        <ol>
+                            {mo.eps.map(e => (
+                                <li>
+                                    <time datetime={e.date}>{day(e.date)}</time>
+                                    <a href={episodeUrl(e, e.dom)} target="_blank" rel="noopener">{e.title}</a>
+                                    <span class="muted">{e.min ? `${e.min} min` : ""}</span>
+                                    {!e.dom && <a class="all-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener" title="Gledaj na domovina.ai">▶</a>}
+                                </li>
+                            ))}
+                        </ol>
+                    </>
+                ))}
+            </details>
+        ))}
+    </section>
+)}

@@ -4,8 +4,10 @@
 import Avatar from "./Avatar.astro";
 import { categoryById, episodeUrl, domovinaPlayerUrl, thumbUrl, shortDate, compactNumber, episodeCountLabel, ACTIVITY_LABEL } from "../lib/catalog.js";
 import catalog from "../lib/catalog.js";
+import allEpisodes from "../data/episodes.json";
 
 const { p } = Astro.props;
+const allCount = allEpisodes[p.slug]?.length || 0;
 const cat = categoryById[p.category];
 const tagLabel = t => catalog.tagLabels[t] || t;
 
@@ -55,7 +57,7 @@ const facts = [
             <ul>
                 {p.episodes.map(e => (
                     <li>
-                        <a href={episodeUrl(e, p.onDomovina)} target="_blank" rel="noopener" class="dep" data-yt={p.onDomovina ? undefined : e.id} data-title={p.onDomovina ? undefined : e.title}>
+                        <a href={episodeUrl(e, e.dom)} target="_blank" rel="noopener" class="dep" data-yt={e.dom ? undefined : e.id} data-title={e.dom ? undefined : e.title}>
                             <span class="ep-thumb">
                                 <img src={thumbUrl(e.id)} alt="" width="160" height="90" loading="lazy" decoding="async" />
                                 {e.min && <span class="ep-dur">{e.min} min</span>}
@@ -66,10 +68,11 @@ const facts = [
                                 {e.abstract && <span class="dep-abs">{e.abstract}</span>}
                             </span>
                         </a>
-                        {!p.onDomovina && <a class="dep-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener">Gledaj na domovina.ai ↗</a>}
+                        {!e.dom && <a class="dep-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener">Gledaj na domovina.ai ↗</a>}
                     </li>
                 ))}
             </ul>
+            {allCount > 0 && <a class="all-link" href={`/p/${p.slug}/#sve-epizode`}>Sve epizode ({allCount}) →</a>}
         </section>
     )}
 

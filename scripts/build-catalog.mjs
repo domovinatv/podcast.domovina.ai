@@ -23,6 +23,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FETCH = path.resolve(process.env.FETCH_REPO || path.join(ROOT, "..", "fetch.domovina.tv"));
 const OUT = path.join(ROOT, "src", "data", "catalog.json");
 const DAYS_OUT = path.join(ROOT, "src", "data", "days.json");
+const EPISODES_OUT = path.join(ROOT, "src", "data", "episodes.json");
 
 const EPISODES_PER_CHANNEL = 6;
 const FEED_SIZE = 120;
@@ -189,6 +190,9 @@ const CDN_AVATAR = slug => `https://cdn.domovina.ai/registry/avatars/${slug}.jpg
 const podcasts = [];
 const feed = [];
 const archive = [];
+// Sve epizode kanala za popis na /p/<slug>/ (src/data/episodes.json). Odvojeno od
+// catalog.json, koji nosi samo EPISODES_PER_CHANNEL najnovijih po kanalu.
+const allEpisodes = {};
 const stats = { excluded: 0 };
 
 for (const p of registry.podcasts) {
@@ -218,6 +222,7 @@ for (const p of registry.podcasts) {
                     title: v.title_hr || v.title,
                     min: v.duration_seconds ? Math.round(v.duration_seconds / 60) : null,
                     abstract: clip(v.abstract, 240),
+                    dom: true,                               // obrađena: članak na domovina.ai
                 }))
                 .filter(e => e.date)
                 .sort((a, b) => b.date.localeCompare(a.date));
@@ -268,6 +273,20 @@ for (const p of registry.podcasts) {
         : age <= 120 ? "slowing"
         : "dormant";
 
+    const archived = archiveEpisodes(p.slug, episodes, onDomovina);
+    // Backfill od početka kanala (since 2005-01-01) zna točan broj originala — watch-state
+    // vidi samo zadnjih WATCH_BASELINE_ITEMS, pa bi broj inače bio „60+".
+    if (!onDomovina && backfill[p.slug]?.originals && backfill[p.slug].since <= "2005-01-01" && archived.length >= (episodeCount || 0)) {
+        episodeCount = archived.length;
+        episodeCountMin = false;
+    }
+    if (archived.length > EPISODES_PER_CHANNEL) {
+        const ids = new Set();
+        allEpisodes[p.slug] = archived
+            .filter(e => !ids.has(e.id) && ids.add(e.id))
+            .map(({ id, date, title, min, dom }) => ({ id, date, title, ...(min ? { min } : {}), ...(dom ? { dom } : {}) }));
+    }
+
     const entry = {
         slug: p.slug,
         name: p.display_name,
@@ -288,22 +307,24 @@ for (const p of registry.podcasts) {
         episodeCount,
         episodeCountMin,
         score: p.quality_score?.total ?? null,
-        episodes: episodes.slice(0, EPISODES_PER_CHANNEL).map(({ isNew, ...e }) => e),
+        // Iz arhive, ne samo s domovina.ai: praćen kanal s backfillom (Ora et Labora) ima tisuću
+        // starijih epizoda koje nisu obrađene — `dom` po epizodi kaže kamo vodi poveznica.
+        episodes: archived.slice(0, EPISODES_PER_CHANNEL).map(({ isNew, ...e }) => e),
     };
     podcasts.push(entry);
 
-    for (const e of archiveEpisodes(p.slug, episodes, onDomovina)) {
+    for (const e of archived) {
         if (e.date < ARCHIVE_START) break;
         if (e.date >= today) continue;                       // današnji dan još nije gotov
-        const { abstract, isNew, ...rest } = e;
-        archive.push({ ...rest, slug: p.slug, name: p.display_name, onDomovina, category: entry.category });
+        const { abstract, isNew, dom, ...rest } = e;
+        archive.push({ ...rest, slug: p.slug, name: p.display_name, onDomovina: !!dom, category: entry.category });
     }
 
     for (const e of episodes) {
         const age = daysSince(e.date);
         if (age == null || age > FEED_WINDOW_DAYS || age < 0) break;
-        const { abstract, ...rest } = e;
-        feed.push({ ...rest, slug: p.slug, name: p.display_name, onDomovina, category: entry.category });
+        const { abstract, dom, ...rest } = e;
+        feed.push({ ...rest, slug: p.slug, name: p.display_name, onDomovina: !!dom, category: entry.category });
     }
 }
 
@@ -371,8 +392,10 @@ for (const c of Object.values(backfill)) for (const o of Object.values(c.origina
     if (o.published_at && o.date >= ARCHIVE_START && o.date < today) hours[+ZAGREB_HOUR.format(new Date(o.published_at))]++;
 }
 fs.writeFileSync(DAYS_OUT, JSON.stringify({ generated_at: catalog.generated_at, since: ARCHIVE_START, hours, days }));
+fs.writeFileSync(EPISODES_OUT, JSON.stringify(allEpisodes));
 const kb = Math.round(fs.statSync(OUT).size / 1024);
 console.log(`✅ ${OUT} — ${podcasts.length} podcasta (${stats.excluded} izvan kataloga), feed ${feedOut.length}, ${kb} KB`);
 console.log(`✅ ${DAYS_OUT} — ${days.length} dana od ${ARCHIVE_START}, ${archiveIds.size} epizoda, ${Math.round(fs.statSync(DAYS_OUT).size / 1024)} KB`);
+console.log(`✅ ${EPISODES_OUT} — ${Object.keys(allEpisodes).length} kanala s punim popisom, ${Object.values(allEpisodes).reduce((s, l) => s + l.length, 0)} epizoda, ${Math.round(fs.statSync(EPISODES_OUT).size / 1024)} KB`);
 console.log("   " + catalog.categories.map(c => `${c.id}:${c.count}`).join(" "));
 console.log("   aktivnost: " + ["active", "slowing", "dormant", "finished", "unknown"].map(a => `${a}:${podcasts.filter(p => p.activity === a).length}`).join(" "));

@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import ChannelDetail from "../../components/ChannelDetail.astro";
 import Row from "../../components/Row.astro";
+import AllEpisodes from "../../components/AllEpisodes.astro";
 import catalog, { categoryById, byFreshness } from "../../lib/catalog.js";
 
 export function getStaticPaths() {
@@ -26,6 +27,7 @@ const description = p.description
             <a href={`/?k=${cat.id}`}>{cat.name}</a>
         </nav>
         <ChannelDetail p={p} />
+        <AllEpisodes p={p} />
         {related.length > 0 && (
             <section class="related">
                 <h2>Još iz kategorije {cat.name}</h2>
