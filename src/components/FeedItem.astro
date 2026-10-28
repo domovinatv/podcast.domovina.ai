@@ -1,5 +1,6 @@
 ---
 import { episodeUrl, thumbUrl } from "../lib/catalog.js";
+import Subs from "./Subs.astro";
 
 const { e } = Astro.props;
 ---
@@ -17,4 +18,5 @@ const { e } = Astro.props;
             <span class="ep-title">{e.title}</span>
         </span>
     </a>
+    <Subs e={e} />
 </li>

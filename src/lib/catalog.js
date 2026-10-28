@@ -17,6 +17,9 @@ export function episodeUrl(ep, onDomovina) {
 // obrađeni. Eksperiment uz embed na ovoj stranici, ne zamjena.
 export const domovinaPlayerUrl = id => `https://domovina.ai/yt/${id}`;
 
+// Ručni YouTube titl (autor ga je uploadao), preslik na našem CDN-u — fetch_youtube_subs.js.
+export const subsUrl = (id, lang) => `https://cdn.domovina.ai/registry/subs/${id}.${lang}.srt`;
+
 export const thumbUrl = id => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
 
 export function initials(name) {

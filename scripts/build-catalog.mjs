@@ -5,6 +5,7 @@
  * Izvori (svi read-only, ništa se ne piše natrag):
  *   data/podcasts_registry.json            — široki registar (tagovi, status, aktivnost)
  *   automatic/watchlist/watch-state.json   — klasificirani originali kanala u pratnji
+ *   automatic/watchlist/subs.json          — ručni YouTube titlovi na CDN-u (fetch_youtube_subs.js)
  *   cdn.domovina.ai/channels/data/index_bundle.json
  *                                          — OBJAVLJENE epizode kanala na domovina.ai
  *                                            (isti bundle koji čita Flutter app)
@@ -156,6 +157,8 @@ if (!registry) {
 const bundle = await loadBundle();
 const watch = readJson(path.join(FETCH, "automatic", "watchlist", "watch-state.json"), { channels: {} }).channels || {};
 const backfill = readJson(path.join(FETCH, "automatic", "watchlist", "backfill.json"), { channels: {} }).channels || {};
+// id → ["en", "hr"]: samo titlovi koji su stvarno na cdn.domovina.ai/registry/subs/
+const subsById = Object.fromEntries(Object.entries(readJson(path.join(FETCH, "automatic", "watchlist", "subs.json"), { videos: {} }).videos || {}).map(([id, v]) => [id, v.langs]));
 const ZAGREB_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zagreb", year: "numeric", month: "2-digit", day: "2-digit" });
 
 /**
@@ -383,6 +386,15 @@ for (let d = ARCHIVE_START; d < today; d = new Date(Date.parse(d) + 86400000).to
 }
 days.reverse();                                              // najnoviji prvi
 
+// Ručni titlovi za download: dodaje se tek na kraju, jer epizode u allEpisodes nastaju
+// izborom polja i inače bi ga izgubile.
+let withSubs = 0;
+const addSubs = e => { const l = subsById[e.id]; if (l?.length) { e.subs = l; withSubs++; } };
+catalog.feed.forEach(addSubs);
+for (const p of catalog.podcasts) p.episodes.forEach(addSubs);
+for (const d of days) { d.items.forEach(addSubs); d.bulk?.forEach(addSubs); }
+for (const list of Object.values(allEpisodes)) list.forEach(addSubs);
+
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(catalog));
 // Sat objave (Europe/Zagreb) — samo iz backfilla, jedini izvor s točnim trenutkom objave.
@@ -397,5 +409,6 @@ const kb = Math.round(fs.statSync(OUT).size / 1024);
 console.log(`✅ ${OUT} — ${podcasts.length} podcasta (${stats.excluded} izvan kataloga), feed ${feedOut.length}, ${kb} KB`);
 console.log(`✅ ${DAYS_OUT} — ${days.length} dana od ${ARCHIVE_START}, ${archiveIds.size} epizoda, ${Math.round(fs.statSync(DAYS_OUT).size / 1024)} KB`);
 console.log(`✅ ${EPISODES_OUT} — ${Object.keys(allEpisodes).length} kanala s punim popisom, ${Object.values(allEpisodes).reduce((s, l) => s + l.length, 0)} epizoda, ${Math.round(fs.statSync(EPISODES_OUT).size / 1024)} KB`);
+console.log(`   ručni titlovi: ${Object.keys(subsById).length} videa u indeksu, ${withSubs} pojavljivanja na stranicama`);
 console.log("   " + catalog.categories.map(c => `${c.id}:${c.count}`).join(" "));
 console.log("   aktivnost: " + ["active", "slowing", "dormant", "finished", "unknown"].map(a => `${a}:${podcasts.filter(p => p.activity === a).length}`).join(" "));

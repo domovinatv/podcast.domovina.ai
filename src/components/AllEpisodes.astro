@@ -2,6 +2,7 @@
 // Sve epizode kanala, po godinama i mjesecima. Stoji IZVAN #detail-root, jer dijalog na
 // početnoj dohvaća samo detalj — popis od tisuću epizoda ne treba putovati u dijalog.
 import { episodeUrl, domovinaPlayerUrl } from "../lib/catalog.js";
+import Subs from "./Subs.astro";
 import allEpisodes from "../data/episodes.json";
 
 const { p } = Astro.props;
@@ -37,6 +38,7 @@ const epizoda = n => n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14
                                     <time datetime={e.date}>{day(e.date)}</time>
                                     <a href={episodeUrl(e, e.dom)} target="_blank" rel="noopener">{e.title}</a>
                                     <span class="muted">{e.min ? `${e.min} min` : ""}</span>
+                                    <Subs e={e} />
                                     {!e.dom && <a class="all-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener" title="Gledaj na domovina.ai">▶</a>}
                                 </li>
                             ))}

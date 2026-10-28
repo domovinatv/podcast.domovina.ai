@@ -1,0 +1,12 @@
+---
+// Linkovi za download ručnih titlova epizode (.srt), kad ih autor ima na YouTubeu.
+import { subsUrl } from "../lib/catalog.js";
+
+const { e } = Astro.props;
+const LABEL = { hr: "hrvatski", en: "engleski" };
+---
+{e.subs?.length > 0 && (
+    <span class="ep-subs" title="Titlovi koje je autor uploadao na YouTube">
+        SRT {e.subs.map(l => <a href={subsUrl(e.id, l)} download aria-label={`Preuzmi titl (${LABEL[l] || l})`}>{l.toUpperCase()}</a>)}
+    </span>
+)}
