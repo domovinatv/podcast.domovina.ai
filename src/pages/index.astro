@@ -32,15 +32,15 @@ const strip = archiveDays.slice(0, STRIP_DAYS).map((d, i) => {
     return { ...d, day: dd, wd: WD[wday], weekend: wday === 0 || wday === 6, loaded: i < FEED_DAYS };
 });
 
-const title = "Hrvatski podcasti — svi na jednom mjestu";
-const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorijama, s novim epizodama čim izađu. ${totals.active} aktivnih, ${totals.newThisWeek} novih epizoda u zadnjih 7 dana.`;
+const title = "Hrvatski i regionalni podcasti — svi na jednom mjestu";
+const description = `Katalog ${totals.podcasts} hrvatskih i regionalnih podcasta po kategorijama, s novim epizodama čim izađu. ${totals.active} aktivnih, ${totals.newThisWeek} novih epizoda u zadnjih 7 dana.`;
 ---
 <Base title={title} description={description}>
     <header class="top">
-        <a href="/" class="brand" aria-label="Hrvatski podcasti — početna">
+        <a href="/" class="brand" aria-label="Hrvatski i regionalni podcasti — početna">
             <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><rect x="12" y="6" width="8" height="13" rx="4" fill="#fff"/><path d="M9 15a7 7 0 0 0 14 0M16 22v4" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
             <span class="brand-text">
-                <span class="brand-title">Hrvatski podcasti</span>
+                <span class="brand-title">Hrvatski i regionalni podcasti</span>
                 <span class="brand-sub">katalog · <span class="nowrap">domovina.ai</span></span>
             </span>
         </a>
@@ -150,7 +150,7 @@ const description = `Katalog ${totals.podcasts} hrvatskih podcasta po kategorija
 
             <footer class="foot">
                 <p>
-                    Katalog hrvatskih podcasta s YouTubea i audio platformi, osvježava se svaku noć.
+                    Katalog hrvatskih i regionalnih podcasta s YouTubea i audio platformi, osvježava se svaku noć.
                     Kanali označeni <span class="dom-dot">D</span> obrađeni su na
                     <a href="https://www.domovina.ai">domovina.ai</a> — članci, poglavlja i pretraga po izgovorenom.
                 </p>

@@ -22,17 +22,17 @@ for (const d of archiveDays) {
     weeks.at(-1).days.push(d);
 }
 
-const title = "Nove epizode po danima · Hrvatski podcasti";
-const description = `Svaki dan sve nove epizode hrvatskih podcasta na jednom mjestu. U prosjeku ${avg} novih epizoda dnevno od ${shortDate(ARCHIVE_SINCE)}.`;
+const title = "Nove epizode po danima · Hrvatski i regionalni podcasti";
+const description = `Svaki dan sve nove epizode hrvatskih i regionalnih podcasta na jednom mjestu. U prosjeku ${avg} novih epizoda dnevno od ${shortDate(ARCHIVE_SINCE)}.`;
 ---
 <Base title={title} description={description}>
     <div class="page">
         <nav class="crumbs">
-            <a href="/">← Svi hrvatski podcasti</a>
+            <a href="/">← Svi hrvatski i regionalni podcasti</a>
         </nav>
         <header class="days-head">
             <h1>Nove epizode po danima</h1>
-            <p class="muted">Sve što su hrvatski podcasti objavili, dan po dan. YouTube ovo ne nudi — tamo vidiš samo kanale koje već pratiš.</p>
+            <p class="muted">Sve što su hrvatski i regionalni podcasti objavili, dan po dan. YouTube ovo ne nudi — tamo vidiš samo kanale koje već pratiš.</p>
             <dl class="facts">
                 <div><dt>prosjek dnevno</dt><dd>{String(avg).replace(".", ",")}</dd></div>
                 <div><dt>epizoda od {shortDate(ARCHIVE_SINCE)}</dt><dd>{total}</dd></div>

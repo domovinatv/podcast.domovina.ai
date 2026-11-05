@@ -19,16 +19,16 @@ const groups = catalog.categories
     .map(c => ({ ...c, items: d.items.filter(e => e.category === c.id) }))
     .filter(g => g.items.length);
 
-const title = `Nove epizode, ${longDate(d.date).toLowerCase()} · Hrvatski podcasti`;
+const title = `Nove epizode, ${longDate(d.date).toLowerCase()} · Hrvatski i regionalni podcasti`;
 const description = d.count
-    ? `${d.count} ${plural(d.count, "nova epizoda", "nove epizode", "novih epizoda")} hrvatskih podcasta iz ${d.channels} ${plural(d.channels, "kanala", "kanala", "kanala")}: ${d.items.slice(0, 4).map(e => e.name).join(", ")}${d.items.length > 4 ? "…" : ""}`
-    : `Nema novih epizoda hrvatskih podcasta za ${longDate(d.date).toLowerCase()}`;
+    ? `${d.count} ${plural(d.count, "nova epizoda", "nove epizode", "novih epizoda")} hrvatskih i regionalnih podcasta iz ${d.channels} ${plural(d.channels, "kanala", "kanala", "kanala")}: ${d.items.slice(0, 4).map(e => e.name).join(", ")}${d.items.length > 4 ? "…" : ""}`
+    : `Nema novih epizoda hrvatskih i regionalnih podcasta za ${longDate(d.date).toLowerCase()}`;
 ---
 <Base title={title} description={description} image={d.items[0] ? thumbUrl(d.items[0].id) : undefined}>
     <div class="page page-days">
       <div class="days-main">
         <nav class="crumbs">
-            <a href="/">← Svi hrvatski podcasti</a>
+            <a href="/">← Svi hrvatski i regionalni podcasti</a>
             <span class="muted">/</span>
             <a href="/dani/">Po danima</a>
         </nav>

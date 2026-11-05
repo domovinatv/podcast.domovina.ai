@@ -17,12 +17,12 @@ const related = catalog.podcasts
     .slice(0, 24);
 
 const description = p.description
-    || `${p.name} — hrvatski podcast (${cat.name.toLowerCase()})${p.hosts.length ? `, voditelji: ${p.hosts.join(", ")}` : ""}. Najnovije epizode i poveznice.`;
+    || `${p.name} — podcast (${cat.name.toLowerCase()})${p.hosts.length ? `, voditelji: ${p.hosts.join(", ")}` : ""}. Najnovije epizode i poveznice.`;
 ---
-<Base title={`${p.name} · Hrvatski podcasti`} description={description} image={p.avatar}>
+<Base title={`${p.name} · Hrvatski i regionalni podcasti`} description={description} image={p.avatar}>
     <div class="page">
         <nav class="crumbs">
-            <a href="/">← Svi hrvatski podcasti</a>
+            <a href="/">← Svi hrvatski i regionalni podcasti</a>
             <span class="muted">/</span>
             <a href={`/?k=${cat.id}`}>{cat.name}</a>
         </nav>
