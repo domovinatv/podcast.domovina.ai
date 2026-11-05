@@ -186,6 +186,21 @@ function archiveEpisodes(slug, episodes, onDomovina) {
     return out.sort((a, b) => b.date.localeCompare(a.date));
 }
 
+// Epizode obrađene izvan praćenih kanala (Tier 2: „obrada svih novih epizoda", ad-hoc):
+// nisu u index_bundleu (_unlisted), ali im je članak na CDN-u, pa /v/<id> radi. Izvor je
+// R2 keys-cache fetch repoa (key → size), isti koji koriste uploaderi; `data/<id>/article.json`
+// znači da je epizoda objavljena. Bez cachea nitko ne dobiva D (stari izgled, ne laž).
+const processedIds = (() => {
+    const c = readJson(path.join(FETCH, ".r2_keys_cache.json"), null);
+    const ids = new Set();
+    for (const k of Object.keys(c?.sizes || {})) {
+        const m = /^data\/([^/]+)\/article\.json$/.exec(k);
+        if (m) ids.add(m[1]);
+    }
+    return ids;
+})();
+const markProcessed = list => list.map(e => (!e.dom && processedIds.has(e.id) ? { ...e, dom: true } : e));
+
 // Avatari s CDN-a postoje za kandidate glasanja (sync_voting_candidates.mjs) — to su
 // nepraćeni kanali s YouTube URL-om. Praćenima avatar čitamo iz channel.json.
 const CDN_AVATAR = slug => `https://cdn.domovina.ai/registry/avatars/${slug}.jpg`;
@@ -276,7 +291,8 @@ for (const p of registry.podcasts) {
         : age <= 120 ? "slowing"
         : "dormant";
 
-    const archived = archiveEpisodes(p.slug, episodes, onDomovina);
+    episodes = markProcessed(episodes);
+    const archived = markProcessed(archiveEpisodes(p.slug, episodes, onDomovina));
     // Backfill od početka kanala (since 2005-01-01) zna točan broj originala — watch-state
     // vidi samo zadnjih WATCH_BASELINE_ITEMS, pa bi broj inače bio „60+".
     if (!onDomovina && backfill[p.slug]?.originals && backfill[p.slug].since <= "2005-01-01" && archived.length >= (episodeCount || 0)) {
