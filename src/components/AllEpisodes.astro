@@ -36,7 +36,9 @@ const epizoda = n => n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14
                             {mo.eps.map(e => (
                                 <li>
                                     <time datetime={e.date}>{day(e.date)}</time>
-                                    <a href={episodeUrl(e, e.dom)} target="_blank" rel="noopener">{e.title}</a>
+                                    {e.dom
+                                        ? <a href={episodeUrl(e, e.dom)} target="_blank" rel="noopener">{e.title}</a>
+                                        : <a href={`/p/${p.slug}/v/${e.id}`}>{e.title}</a>}
                                     <span class="muted">{e.min ? `${e.min} min` : ""}</span>
                                     <Subs e={e} />
                                     {!e.dom && <a class="all-dom" href={domovinaPlayerUrl(e.id)} target="_blank" rel="noopener" title="Gledaj na domovina.ai">▶</a>}
