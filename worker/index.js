@@ -6,13 +6,32 @@ const ROUTE = /^\/p\/([a-z0-9-]+)\/v\/([A-Za-z0-9_-]{11})\/?$/;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const date = iso => { const [y, m, d] = iso.split("-"); return `${Number(d)}. ${Number(m)}. ${y}.`; };
 
+// Najveća sličica koju YouTube ima: maxres (1280×720, bez crnih traka) postoji za većinu
+// videa, hqdefault (480×360) uvijek. Provjera je HEAD na edgeu, keširana dan.
+async function thumb(id) {
+    const max = `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+    try {
+        const r = await fetch(max, { method: "HEAD", cf: { cacheTtl: 86400, cacheEverything: true } });
+        if (r.ok) return { src: max, w: 1280, h: 720 };
+    } catch {}
+    return { src: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`, w: 480, h: 360 };
+}
+
 async function notFound(env, request) {
     const r = await env.ASSETS.fetch(new URL("/404.html", request.url));
     return new Response(r.body, { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
-function page(slug, id, name, [title, iso, min, dom], url) {
-    const desc = `${title} — ${name}${min ? `, ${min} min` : ""}.`;
+// Kanal i epizoda za opis, bez ponavljanja naslova (WhatsApp ga prikazuje odmah ispod).
+function page(slug, id, name, [title, iso, min, dom], url, img) {
+    const desc = `Epizoda podcasta ${name}, ${date(iso)}${min ? ` · ${min} min` : ""}. Gledaj na podcast.domovina.ai.`;
+    const ld = JSON.stringify({
+        "@context": "https://schema.org", "@type": "VideoObject",
+        name: title, description: desc, uploadDate: iso, thumbnailUrl: img.src,
+        ...(min ? { duration: `PT${min}M` } : {}),
+        embedUrl: `https://www.youtube-nocookie.com/embed/${id}`,
+        url, isPartOf: { "@type": "PodcastSeries", name, url: `https://podcast.domovina.ai/p/${slug}/` },
+    }).replace(/</g, "\\u003c");
     return `<!doctype html>
 <html lang="hr">
 <head>
@@ -27,7 +46,16 @@ function page(slug, id, name, [title, iso, min, dom], url) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${esc(url)}">
-<meta property="og:image" content="https://i.ytimg.com/vi/${id}/hqdefault.jpg">
+<meta property="og:image" content="${img.src}">
+<meta property="og:image:width" content="${img.w}">
+<meta property="og:image:height" content="${img.h}">
+<meta property="og:image:alt" content="${esc(title)}">
+<meta property="og:locale" content="hr_HR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${img.src}">
+<script type="application/ld+json">${ld}</script>
 <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121418" media="(prefers-color-scheme: dark)">
 <style>
@@ -69,7 +97,7 @@ export default {
         const ep = eps[id];
         if (!ep) return notFound(env, request);
         const canonical = `https://podcast.domovina.ai/p/${slug}/v/${id}`;
-        return new Response(page(slug, id, name, ep, canonical), {
+        return new Response(page(slug, id, name, ep, canonical, await thumb(id)), {
             headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" },
         });
     },
